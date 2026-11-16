@@ -1,0 +1,10 @@
+{
+	"name": "@openfabriq/e2e",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"dependencies": {
+		"@openfabriq/core": "workspace:*",
+		"@openfabriq/runner": "workspace:*"
+	}
+}

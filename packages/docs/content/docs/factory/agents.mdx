@@ -1,0 +1,132 @@
+---
+title: Agents
+description: A job description in Markdown, and the tools the agent may use on the machine.
+---
+
+An agent is a job description. Its [settings](#settings) set the model and the tools; the text below them is the brief, the same for every automation that uses the agent.
+
+## Example
+
+```markdown title="openfabriq/agents/implementer/agent.md"
+---
+description: Implements a ready issue and opens a review-ready pull request
+model: opus            # optional, the model of factory.yaml otherwise
+tools: [read, edit, shell]
+---
+# Implementation
+
+You make the change the issue describes, prove that it works,
+and deliver it as a pull request ready for review. A human merges.
+
+## Input
+- The issue and its comments.
+
+## Output
+- A pull request with the change, its tests and the proof they pass.
+
+## Procedure
+1. Read the issue and the code concerned before writing anything.
+2. Stay within the issue. If the scope grows, say so in a comment.
+3. Run the tests and the lint, and put the proof in the description.
+```
+
+## Write a good brief
+
+A good brief has four parts:
+
+- a **role**: one paragraph on what the agent does and what it never does;
+- an **Input**: what the agent receives;
+- an **Output**: precise enough to be checked;
+- a numbered **Procedure**.
+
+## Settings [#settings]
+
+The settings are the YAML lines between the two `---` at the top of the file.
+
+| Key | What it says | Example | Default |
+| --- | --- | --- | --- |
+| `description` | One line, shown in the studio and in `plan` | `Reviews a change against the issue's contract` | Required |
+| `model` | `sonnet`, `opus`, `haiku` or a model id | `opus` | The `model` of `factory.yaml` |
+| `tools` | What the agent may do on the machine: `read`, `edit`, `shell`, `web`, `commands` ([below](#tools)) | `[read, edit, shell]` | `[read]` |
+| `mcp` | The [MCP servers](#mcp-servers) of `factory.yaml` it uses, and their tools | `{ sentry: [search_issues] }` | None |
+| `network` | The [sites](/factory/harness/#network) its shell, its `web` tool, its checks and its commands reach: `packages`, `none`, `any` or a list | `[packages, "*.sentry.io"]` | The `network` of `factory.yaml` |
+
+## Models
+
+An agent runs on its `model` (`sonnet`, `opus`, `haiku` or a full model id), or on the `model` of `factory.yaml`. A reviewer on a different model than the implementer does not share its blind spots: set `model: opus` on the reviewer of a factory that runs on `sonnet`.
+
+Agents run with Claude Code, installed on the engine's machine, which pays for them with one of two credentials:
+
+| Credential | How to set it up | Who pays | Use it for |
+| --- | --- | --- | --- |
+| Claude subscription | Log in to Claude Code on the engine's machine | Your plan's quota, shared with your own sessions | Your computer, a factory only you use |
+| Anthropic API key | `ANTHROPIC_API_KEY` in the engine's environment | Your Anthropic account, per token | A server the whole team uses ([how](/deployment/docker/#claude-api-key-or-subscription)) |
+
+When both are there, the key wins; `openfabriq start` says which one the runs use. Either way, set [limits](/factory/factory-yaml/#limits) before you start: with a key, they are real spend.
+
+<Callout title="Coming soon: Codex">
+Support for OpenAI's Codex, so a team can run its factory on a ChatGPT plan, is planned. Need it? [Open an issue](repo:issues) with your use case.
+</Callout>
+
+## Tools
+
+| Tool | What the agent can do |
+| --- | --- |
+| `read` | Read and search the code. The default when `tools` is left out; otherwise list it with the others, or the agent cannot read |
+| `edit` | Change files in its checkout |
+| `shell` | Run commands, such as tests, a build or the app |
+| `web` | Read web pages of the sites its [`network`](/factory/harness/#network) reaches; search the web only with `network: any` |
+| `commands` | Run the named [`commands`](/factory/harness/#commands) of `factory.yaml`, and nothing else |
+
+`commands` is the safe middle ground: the agent runs your tests without a free shell, and the engine runs them in its own sandbox.
+
+An agent with `edit` but no `shell` cannot run git. When its automation may open or update a pull request (`create_pull_request`, `push_to_pull_request`), the engine gives it a `commit` tool instead: the agent names the files and a message, the engine commits exactly those files and discards every other change in the checkout, such as a working file a command wrote. Then, as with `shell`, the engine runs the checks on the commit and publishes it only if the factory allows it.
+
+## Boundaries
+
+Whatever its tools, an agent works within these boundaries:
+
+- **Files.** It reads only its checkout and the factory's skills, and writes only in its checkout.
+- **Shell.** Commands run in Claude Code's sandbox. They read the machine, except its secrets (the engine's tokens, `~/.ssh`, `~/.config/gh`, `~/.aws`, the keychain). They write only in the checkout and the temporary folder, so they cannot install dependencies: do it in `setup`. They can open Unix sockets of their own, not the machine's: on Linux the shell does not see `/run`, what `/tmp` held when the run started, the sockets in your home folder's hidden folders, nor another run's temporary folder.
+- **Environment.** The agent has no `GH_TOKEN`, an empty `gh` configuration, no git credential helper, no SSH agent, and no variable that looks like a secret. It receives the values of `env`, never those of `secrets`.
+- **Network.** Its shell and its `web` tool reach only the sites of its [`network`](/factory/harness/#network): by default, the package registries and GitHub. A site off the list is refused, and the repository cannot add one.
+
+## Command-line tools
+
+openfabriq installs nothing for agents. A command-line tool an agent uses, such as a browser driver, a linter or a cloud CLI, must already be where the agent runs:
+
+| The tool | How to provide it | How the agent runs it |
+| --- | --- | --- |
+| Is a dependency of your project | List it in your project, and install it in [`setup`](/factory/harness/#setup) | With `shell`, for example `pnpm exec playwright test` |
+| Is installed on the machine | Install it once on the engine's machine, on its `PATH` | With `shell`, by its name |
+| Needs a secret, or always runs the same way | Declare it in [`commands`](/factory/harness/#commands), with its `secrets` | With the `commands` tool, by name, without arguments |
+| Has an MCP server | Declare the server in [`mcp`](/integrations/mcp/) | Through the MCP tools listed in the agent's `mcp` |
+
+Then tell the agent when and how to use the tool, in its brief or in a skill. See [Skills for command-line tools](/factory/skills/#skills-for-command-line-tools).
+
+### What a tool can do in the agent's shell
+
+A tool run with `shell` has the agent's [boundaries](#boundaries): it can read the machine, including tools installed in your home folder. Three things make it fail:
+
+- **It writes in your home folder**, for a cache, a configuration or a profile, unless an option or a variable points it to the temporary folder.
+- **It needs a token.** The shell never receives the values of `secrets`: run the tool as a [command](/factory/harness/#commands) instead.
+- **It needs a process that outlives the command.** On Linux each command has its own sandbox, which stops what it started when it ends: a background server is gone, and the next command could not reach it anyway. Start it and use it in the same command (see [Browser evidence](/factory/skills/#example-browser-evidence)).
+
+Before relying on a new tool, start one manual run with [`openfabriq run`](/factory/automations/#run-an-automation-manually) and read its logs in the studio.
+
+### With Docker
+
+The Docker image holds Node, git, `gh`, Claude Code, openfabriq and the sandbox tools, plus agent-browser and Playwright's headless Chrome for the templates' browser-evidence skill. To add a tool, install it in `docker/Dockerfile`, then rebuild with `docker compose up -d --build`.
+
+## MCP servers
+
+```yaml title="agents/investigator/agent.md (settings)"
+mcp:
+  sentry: [search_issues, get_issue_details]
+```
+
+The agent may call only the listed tools of servers declared in `factory.yaml`. See [MCP servers](/integrations/mcp/).
+
+## Skills for one agent
+
+Put the skills that only this agent needs in `agents/<name>/skills/<skill>/SKILL.md`, or `<area>/agents/<name>/skills/<skill>/SKILL.md` for an agent of an [area](/factory/overview/#a-large-factory-folders-by-area). See [Skills](/factory/skills/).

@@ -1,0 +1,183 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "Geist";
+      src: url("assets/fonts/geist.woff2") format("woff2");
+      font-weight: 100 900;
+    }
+    @font-face {
+      font-family: "Geist Mono";
+      src: url("assets/fonts/geist-mono.woff2") format("woff2");
+      font-weight: 100 900;
+    }
+    #root p {
+      margin: 0;
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+      font-family: "Geist", sans-serif;
+      color: var(--ink);
+    }
+    /* The pull request as the result scene left it, moved up: the same card. */
+    #review-pr {
+      position: absolute;
+      left: 210px;
+      top: 160px;
+      width: 1500px;
+      padding: 34px 48px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+    }
+    #review-pr .line {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 36px;
+    }
+    #review-pr .opened {
+      padding: 4px 18px;
+      border-radius: 999px;
+      background: var(--ok-soft);
+      color: var(--ok);
+      font-size: 28px;
+      font-weight: 600;
+    }
+    #review-pr .sub {
+      margin-top: 14px;
+      font-size: 30px;
+      color: var(--muted);
+    }
+    #review-pr .labels {
+      margin-top: 18px;
+      display: flex;
+      gap: 14px;
+    }
+    #review-pr .labels span {
+      padding: 4px 18px;
+      border-radius: 999px;
+      font-family: "Geist Mono", monospace;
+      font-size: 28px;
+      color: var(--ok);
+      background: var(--ok-soft);
+      border: 1px solid rgba(22, 128, 74, 0.3);
+    }
+    .way {
+      position: absolute;
+      top: 520px;
+      width: 735px;
+      height: 300px;
+      padding: 40px 44px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: var(--shadow-small);
+    }
+    #review-merge {
+      left: 210px;
+    }
+    #review-human {
+      left: 975px;
+    }
+    .way .tag {
+      display: inline-block;
+      padding: 6px 20px;
+      border-radius: 999px;
+      font-size: 30px;
+      font-weight: 600;
+    }
+    #review-merge .tag {
+      color: var(--ok);
+      background: var(--ok-soft);
+    }
+    #review-human .tag {
+      color: var(--warn);
+      background: var(--warn-soft);
+    }
+    .way h3 {
+      margin: 22px 0 10px;
+      font-size: 46px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+    }
+    .way p {
+      font-size: 30px;
+      color: var(--muted);
+    }
+    .way code {
+      font-family: "Geist Mono", monospace;
+      font-size: 28px;
+      color: var(--ink);
+    }
+    .ring {
+      position: absolute;
+      inset: -2px;
+      border-radius: 22px;
+      opacity: 0;
+    }
+    #review-merge .ring {
+      box-shadow: 0 0 0 3px rgb(22, 128, 74);
+    }
+    #review-human .ring {
+      box-shadow: 0 0 0 3px rgb(150, 105, 20);
+    }
+    #review-caption {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 912px;
+      text-align: center;
+      font-size: 40px;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+    }
+  </style>
+  <div id="root" data-composition-id="review" data-width="1920" data-height="1080">
+    <div id="review-stage" class="clip" data-start="0" data-duration="6.5">
+      <div id="review-pr">
+        <p class="line"><span class="opened">Opened</span><b>Pull request #45</b>Stream the export instead of loading every task</p>
+        <p class="sub">Reviewed before opening by reviewer: approved after 2 rounds, risk low.</p>
+        <p class="labels"><span>ready-to-merge</span><span>risk:low</span></p>
+      </div>
+      <!-- merge_pull_request: the engine merges only under the automation's conditions. -->
+      <div id="review-merge" class="way" data-layout-allow-overflow>
+        <i class="ring"></i>
+        <span class="tag">Merged</span>
+        <h3>It merges on its own</h3>
+        <p>When the reviewer says <code>risk:low</code> and every file is in <code>src/export/**</code>.</p>
+      </div>
+      <div id="review-human" class="way" data-layout-allow-overflow>
+        <i class="ring"></i>
+        <span class="tag">Needs a human</span>
+        <h3>Anything else waits</h3>
+        <p>A higher risk, or other files: a person reviews and merges.</p>
+      </div>
+      <p id="review-caption">Low risk, in the files you allowed: it merges. Otherwise, a human decides.</p>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    // "Low risk, in files you allowed?"
+    tl.fromTo(
+      "#review-merge, #review-human",
+      { opacity: 0, y: 40, filter: "blur(8px)" },
+      { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.5, ease: "expo.out", stagger: 0.12 },
+      0.3,
+    );
+    tl.fromTo(
+      "#review-caption",
+      { opacity: 0, filter: "blur(8px)" },
+      { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" },
+      0.5,
+    );
+    // "It merges on its own": this pull request takes the green way.
+    tl.to("#review-merge .ring", { opacity: 1, duration: 0.3 }, 2.6);
+    tl.to("#review-merge", { scale: 1.03, duration: 0.4, ease: "back.out(1.6)" }, 2.6);
+    // "Anything else waits for a human."
+    tl.to("#review-human .ring", { opacity: 1, duration: 0.3 }, 4.7);
+    tl.to("#review-pr, #review-merge, #review-human, #review-caption", { opacity: 0, filter: "blur(8px)", duration: 0.2, ease: "power2.in" }, 6.25);
+    window.__timelines["review"] = tl;
+  </script>
+</template>

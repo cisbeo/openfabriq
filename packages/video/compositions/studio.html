@@ -1,0 +1,228 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "Geist";
+      src: url("assets/fonts/geist.woff2") format("woff2");
+      font-weight: 100 900;
+    }
+    @font-face {
+      font-family: "Geist Mono";
+      src: url("assets/fonts/geist-mono.woff2") format("woff2");
+      font-weight: 100 900;
+    }
+    #root p {
+      margin: 0;
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+      font-family: "Geist", sans-serif;
+      color: var(--ink);
+    }
+    #studio-window {
+      position: absolute;
+      left: 96px;
+      top: 72px;
+      width: 1728px;
+      height: 790px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .bar {
+      position: relative;
+      height: 56px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      padding: 0 22px;
+      gap: 10px;
+      background: var(--sunken);
+    }
+    .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--line);
+    }
+    #studio-address {
+      position: absolute;
+      inset: 0;
+      line-height: 56px;
+      text-align: center;
+      font-size: 28px;
+      color: var(--muted);
+    }
+    #studio-view {
+      position: relative;
+      height: 734px;
+      overflow: hidden;
+      background: var(--ground);
+    }
+    /* One screen of the studio, 1440 × 900 page pixels from a capture at twice that: the camera
+       moves this layer, and the marks inside it stay on what they point at. */
+    .cam {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1440px;
+      height: 900px;
+      transform-origin: 0 0;
+      opacity: 0;
+    }
+    .cam img {
+      position: absolute;
+      inset: 0;
+      width: 1440px;
+      height: 900px;
+    }
+    .mark {
+      position: absolute;
+      border-radius: 12px;
+      box-shadow:
+        0 0 0 3px var(--accent),
+        0 0 0 9px var(--accent-soft);
+      opacity: 0;
+    }
+    #studio-claude {
+      position: absolute;
+      left: 300px;
+      top: 230px;
+      width: 1320px;
+      padding: 34px 44px 40px;
+      background: #1a1a19;
+      color: #ececec;
+      border-radius: 22px;
+      box-shadow:
+        0 40px 80px -24px rgba(0, 0, 0, 0.45),
+        0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+      font-family: "Geist Mono", monospace;
+      font-size: 30px;
+      line-height: 50px;
+      opacity: 0;
+    }
+    #studio-claude .head {
+      margin-bottom: 18px;
+      font-family: "Geist", sans-serif;
+      font-size: 28px;
+      color: #9b9b98;
+    }
+    #studio-claude .head b {
+      color: #d97757;
+      font-weight: 600;
+    }
+    #studio-claude .ask {
+      padding: 6px 20px;
+      border: 1px solid #3a3a38;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+    #studio-claude .ask span {
+      display: inline-block;
+    }
+    #studio-claude .tool {
+      color: #d97757;
+    }
+    .caption {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 912px;
+      text-align: center;
+      font-size: 40px;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+    }
+  </style>
+  <div id="root" data-composition-id="studio" data-width="1920" data-height="1080">
+    <div id="studio-stage" class="clip" data-start="0" data-duration="10.2">
+      <!-- The studio's demo, from the docs' made-up week (studio-shots.js captures the screens). -->
+      <div id="studio-window">
+        <div class="bar">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <p id="studio-address">Studio — acme/web-app</p>
+        </div>
+        <div id="studio-view">
+          <div id="cam-board" class="cam"><img src="assets/images/studio-board.png" alt="The board: waiting, working, needs you, done" /></div>
+          <div id="cam-run" class="cam">
+            <img src="assets/images/studio-run.png" alt="Run implement-44: what happened, with the reviewer, and its cost" />
+            <i id="mark-reviewer" class="mark" style="left: 950px; top: 321px; width: 188px; height: 52px"></i>
+            <i id="mark-cost" class="mark" style="left: 1326px; top: 130px; width: 90px; height: 26px"></i>
+          </div>
+          <div id="cam-wiki" class="cam"><img src="assets/images/studio-wiki.png" alt="The wiki: how the code fits together, with a diagram" /></div>
+          <div id="cam-chat" class="cam"><img src="assets/images/studio-chat.png" alt="The chat: what failed this week, answered from the runs" /></div>
+        </div>
+      </div>
+      <!-- "Even from Claude Code": openfabriq mcp gives a Claude Code session the factory's read-only tools. -->
+      <div id="studio-claude">
+        <p class="head"><b>✻ Claude Code</b> · ~/web-app</p>
+        <p class="ask">&gt; <span id="claude-ask">What failed this week in our factory?</span></p>
+        <p id="claude-tool" class="tool">⏺ openfabriq · list_runs (status: failed)</p>
+        <p id="claude-answer-1">⏺ One run: the implementer on #49. Its tests passed,</p>
+        <p id="claude-answer-2">&nbsp;&nbsp;but typecheck did not, so no pull request left.</p>
+      </div>
+      <p id="studio-caption-1" class="caption">Follow it all in the studio.</p>
+      <p id="studio-caption-2" class="caption">Every run and its cost.</p>
+      <p id="studio-caption-3" class="caption">A wiki that maps your code, written for you.</p>
+      <p id="studio-caption-4" class="caption">A chat with your factory.</p>
+      <p id="studio-caption-5" class="caption">Even from Claude Code.</p>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo(
+      "#studio-window",
+      { opacity: 0, y: 30, filter: "blur(10px)" },
+      { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.5, ease: "expo.out" },
+      0.05,
+    );
+    // Each screen as the voice names it (scene 11's clip starts at 0.3 s). Every screen shows the
+    // whole app, its menu and breadcrumb with it, at 1.2 (the window's width), so each reads as
+    // the studio; the camera only follows the page down a little.
+    // A frame is [x, y, scale, dx]: the page point at the view's top-left corner, screen pixels
+    // per page pixel, and an optional shift right. [layer, from, to, start, end]
+    const shots = [
+      ["board", [0, 0, 1.2], [0, 24, 1.2], 0.05, 2.1],
+      ["run", [0, 0, 1.2], [0, 24, 1.2], 2.1, 3.7],
+      ["wiki", [0, 0, 1.2], [0, 150, 1.2], 3.7, 6.2],
+      ["chat", [0, 0, 1.2], [0, 24, 1.2], 6.2, 10.2],
+    ];
+    // An optional fourth number moves the page right on the screen: a frame narrower than the view, centred.
+    const frame = ([x, y, s, dx = 0]) => ({ x: dx - x * s, y: -y * s, scale: s });
+    shots.forEach(([key, from, to, start, end], i) => {
+      const cam = `#cam-${key}`;
+      // A short dip between screens: the last one leaves before the next comes, never both at once.
+      if (i > 0) tl.to(`#cam-${shots[i - 1][0]}`, { opacity: 0, duration: 0.15, ease: "power2.in" }, start - 0.05);
+      if (i === 0) tl.to(cam, { opacity: 1, duration: 0.01 }, start);
+      else tl.fromTo(cam, { opacity: 0, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.3, ease: "power2.out" }, start + 0.1);
+      // A slow move of the camera while the screen holds: a push in, or down the page.
+      tl.fromTo(cam, frame(from), { ...frame(to), duration: end - start + 0.4, ease: "sine.inOut" }, start);
+    });
+    // "every run": the reviewer in its chain; "and its cost".
+    tl.fromTo("#mark-reviewer", { opacity: 0, scale: 1.15 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)" }, 2.5);
+    tl.fromTo("#mark-cost", { opacity: 0, scale: 1.3 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)" }, 3.0);
+    const captions = [0.4, 2.1, 3.7, 6.2, 8.0];
+    captions.forEach((t, i) => {
+      const id = `#studio-caption-${i + 1}`;
+      tl.fromTo(id, { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" }, t);
+      const next = captions[i + 1];
+      if (next !== undefined) tl.to(id, { opacity: 0, filter: "blur(8px)", duration: 0.15, ease: "power2.in" }, next - 0.15);
+    });
+    // "Even from Claude Code": the studio steps back, a Claude Code session asks the same question.
+    tl.to("#studio-window", { scale: 0.96, opacity: 0.35, filter: "blur(4px)", duration: 0.5, ease: "power2.inOut" }, 7.75);
+    tl.fromTo(
+      "#studio-claude",
+      { opacity: 0, y: 50, filter: "blur(8px)" },
+      { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.45, ease: "expo.out" },
+      7.8,
+    );
+    tl.fromTo("#claude-ask", { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 0.55, ease: "steps(38)" }, 8.15);
+    tl.fromTo("#claude-tool", { opacity: 0 }, { opacity: 1, duration: 0.15 }, 8.85);
+    tl.fromTo("#claude-answer-1", { opacity: 0 }, { opacity: 1, duration: 0.15 }, 9.15);
+    tl.fromTo("#claude-answer-2", { opacity: 0 }, { opacity: 1, duration: 0.15 }, 9.3);
+    tl.to("#studio-window, #studio-claude, #studio-caption-5", { opacity: 0, filter: "blur(8px)", duration: 0.2, ease: "power2.in" }, 9.95);
+    window.__timelines["studio"] = tl;
+  </script>
+</template>

@@ -1,0 +1,70 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "Geist";
+      src: url("assets/fonts/geist.woff2") format("woff2");
+      font-weight: 100 900;
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+      font-family: "Geist", sans-serif;
+    }
+    #title-block {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 64px;
+    }
+    /* The brand's logo file, 293 × 52, at 1.5×: on screen from the first frame, the film's thumbnail. */
+    #title-logo {
+      width: 440px;
+      height: 78px;
+    }
+    #title-text {
+      margin: 0;
+      color: var(--ink);
+      font-size: 132px;
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: -0.045em;
+      text-align: center;
+    }
+    #title-text .w {
+      display: inline-block;
+    }
+    #title-text .accent {
+      color: var(--accent);
+    }
+  </style>
+  <div id="root" data-composition-id="title" data-width="1920" data-height="1080">
+    <div id="title-block" class="clip" data-start="0" data-duration="3.8">
+      <img id="title-logo" src="assets/brand/logo.svg" alt="openfabriq" />
+      <h1 id="title-text">
+        <span class="w">Your</span> <span class="w">software</span> <span class="w">factory,</span><br />
+        <span class="w accent">as</span> <span class="w accent">code.</span>
+      </h1>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const words = "#title-text .w";
+    // The logo holds still from frame 0; the line lands word by word under it.
+    tl.fromTo(
+      words,
+      { opacity: 0, filter: "blur(10px)" },
+      { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out", stagger: 0.09 },
+      0.4,
+    );
+    // Leave together with a quick blur-out.
+    tl.to(
+      ["#title-logo", words],
+      { opacity: 0, filter: "blur(8px)", duration: 0.18, ease: "power2.in", stagger: 0.04 },
+      3.4,
+    );
+    window.__timelines["title"] = tl;
+  </script>
+</template>

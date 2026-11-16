@@ -1,0 +1,39 @@
+{
+	"name": "openfabriq",
+	"private": true,
+	"license": "Apache-2.0",
+	"repository": "github:openfabriq/openfabriq",
+	"type": "module",
+	"packageManager": "pnpm@10.15.1",
+	"engines": {
+		"node": ">=24"
+	},
+	"scripts": {
+		"test": "vitest run --passWithNoTests && pnpm --filter @openfabriq/relay test && node --test 'examples/*/openfabriq/scripts/test/*-test.mjs'",
+		"e2e": "pnpm build && vitest run -c e2e/vitest.config.ts e2e/free",
+		"e2e:agent": "pnpm build && vitest run -c e2e/vitest.config.ts e2e/agent",
+		"e2e:linux": "pnpm build && vitest run -c e2e/vitest.config.ts e2e/linux",
+		"e2e:linux:login": "docker build -q -t openfabriq-e2e-linux e2e/linux && docker run -it --rm -v openfabriq-e2e-home:/home/dev openfabriq-e2e-linux claude",
+		"lint": "biome check .",
+		"typecheck": "tsc -p tsconfig.test.json && tsc -p packages/studio/app && pnpm --filter @openfabriq/relay typecheck && pnpm --filter @openfabriq/docs typecheck",
+		"format": "biome format --write .",
+		"build": "tsc -b && pnpm --filter @openfabriq/studio build:app",
+		"docs:dev": "pnpm --filter @openfabriq/docs dev",
+		"docs:build": "pnpm --filter @openfabriq/docs build",
+		"openfabriq": "node packages/cli/dist/index.js",
+		"package": "pnpm build && node --experimental-strip-types --no-warnings packages/cli/scripts/package.ts",
+		"mutation": "stryker run",
+		"examples:workflows": "pnpm build && node packages/docs/scripts/example-workflows.mjs"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.6.5",
+		"@stryker-mutator/core": "10.1.1",
+		"@stryker-mutator/vitest-runner": "10.1.1",
+		"@testing-library/dom": "10.4.2",
+		"@testing-library/react": "16.3.3",
+		"@types/node": "^24.19.2",
+		"happy-dom": "21.0.4",
+		"typescript": "7.0.2",
+		"vitest": "5.1.0"
+	}
+}

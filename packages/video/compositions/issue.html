@@ -1,0 +1,132 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "Geist";
+      src: url("assets/fonts/geist.woff2") format("woff2");
+      font-weight: 100 900;
+    }
+    #root p {
+      margin: 0;
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+      font-family: "Geist", sans-serif;
+      color: var(--ink);
+    }
+    #issue-card {
+      position: absolute;
+      left: 260px;
+      top: 230px;
+      width: 1400px;
+      padding: 56px 64px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+    }
+    #issue-repo {
+      font-size: 30px;
+      color: var(--muted);
+    }
+    #issue-title {
+      margin-top: 14px;
+      font-size: 56px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+    }
+    #issue-body {
+      margin-top: 22px;
+      font-size: 32px;
+      color: var(--muted);
+    }
+    .labels {
+      margin-top: 40px;
+      display: flex;
+      gap: 16px;
+      height: 56px;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      height: 56px;
+      padding: 0 26px;
+      border-radius: 999px;
+      font-size: 30px;
+      font-weight: 500;
+      border: 1px solid var(--line);
+      color: var(--muted);
+    }
+    #issue-ready {
+      color: var(--accent);
+      border-color: var(--accent-line);
+      background: var(--accent-soft);
+    }
+    #issue-event {
+      margin-top: 30px;
+      font-size: 30px;
+      color: var(--muted);
+    }
+    #issue-event b {
+      color: var(--ink);
+      font-weight: 600;
+    }
+    #issue-caption {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 912px;
+      text-align: center;
+      font-size: 40px;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+    }
+  </style>
+  <div id="root" data-composition-id="issue" data-width="1920" data-height="1080">
+    <div id="issue-stage" class="clip" data-start="0" data-duration="4.2">
+      <!-- The issue the Slack request became; the studio's run screenshots follow the same #44. -->
+      <div id="issue-card">
+        <p id="issue-repo">acme/web-app · Issue #44 · from Slack</p>
+        <p id="issue-title">Export fails for accounts with more than 1,000 tasks</p>
+        <p id="issue-body">Exporting tasks as CSV times out for large accounts.</p>
+        <div class="labels">
+          <span id="issue-bug" class="chip">bug</span>
+          <span id="issue-ready" class="chip">ready-for-agent</span>
+        </div>
+        <p id="issue-event"><b>triage</b> added bug and ready-for-agent</p>
+      </div>
+      <p id="issue-caption">Triage sorts it, and marks it ready.</p>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo(
+      "#issue-card",
+      { opacity: 0, scale: 0.9, filter: "blur(10px)" },
+      { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.5, ease: "expo.out" },
+      0,
+    );
+    tl.fromTo(
+      "#issue-caption",
+      { opacity: 0, filter: "blur(8px)" },
+      { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" },
+      0.3,
+    );
+    // The triage agent's two labels: "sorts it", then "marks it ready".
+    tl.fromTo(
+      "#issue-bug",
+      { opacity: 0, scale: 0.6 },
+      { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(1.6)", transformOrigin: "left center" },
+      1.0,
+    );
+    tl.fromTo(
+      "#issue-ready",
+      { opacity: 0, scale: 0.6 },
+      { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(1.6)", transformOrigin: "left center" },
+      1.9,
+    );
+    tl.fromTo("#issue-event", { opacity: 0 }, { opacity: 1, duration: 0.25 }, 2.1);
+    tl.to("#issue-card, #issue-caption", { opacity: 0, filter: "blur(8px)", duration: 0.2, ease: "power2.in" }, 3.95);
+    window.__timelines["issue"] = tl;
+  </script>
+</template>

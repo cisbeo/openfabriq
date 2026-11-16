@@ -1,0 +1,489 @@
+{
+	"schemaVersion": 2,
+	"generatedAt": "2026-11-07T23:52:39.347Z",
+	"title": "Design System: openfabriq site",
+	"extensions": {
+		"colorMeta": {
+			"studio-blue": {
+				"role": "primary",
+				"displayName": "Studio Blue",
+				"canonical": "oklch(0.5 0.19 262)",
+				"dark": "oklch(0.74 0.13 262)",
+				"tonalRamp": [
+					"oklch(15% 0.19 262)",
+					"oklch(27% 0.19 262)",
+					"oklch(39% 0.19 262)",
+					"oklch(51% 0.19 262)",
+					"oklch(63% 0.19 262)",
+					"oklch(75% 0.19 262)",
+					"oklch(85% 0.19 262)",
+					"oklch(95% 0.19 262)"
+				]
+			},
+			"studio-blue-soft": {
+				"role": "primary",
+				"displayName": "Studio Blue Wash",
+				"canonical": "oklch(0.54 0.19 262 / 0.08)",
+				"dark": "oklch(0.66 0.16 262 / 0.13)",
+				"tonalRamp": [
+					"oklch(15% 0.19 262)",
+					"oklch(27% 0.19 262)",
+					"oklch(39% 0.19 262)",
+					"oklch(51% 0.19 262)",
+					"oklch(63% 0.19 262)",
+					"oklch(75% 0.19 262)",
+					"oklch(85% 0.19 262)",
+					"oklch(95% 0.19 262)"
+				]
+			},
+			"studio-blue-line": {
+				"role": "primary",
+				"displayName": "Studio Blue Line",
+				"canonical": "oklch(0.54 0.19 262 / 0.3)",
+				"dark": "oklch(0.66 0.16 262 / 0.4)",
+				"tonalRamp": [
+					"oklch(15% 0.19 262)",
+					"oklch(27% 0.19 262)",
+					"oklch(39% 0.19 262)",
+					"oklch(51% 0.19 262)",
+					"oklch(63% 0.19 262)",
+					"oklch(75% 0.19 262)",
+					"oklch(85% 0.19 262)",
+					"oklch(95% 0.19 262)"
+				]
+			},
+			"done-green": {
+				"role": "tertiary",
+				"displayName": "Done Green",
+				"canonical": "oklch(0.55 0.13 152)",
+				"dark": "oklch(0.74 0.14 152)",
+				"tonalRamp": [
+					"oklch(15% 0.13 152)",
+					"oklch(27% 0.13 152)",
+					"oklch(39% 0.13 152)",
+					"oklch(51% 0.13 152)",
+					"oklch(63% 0.13 152)",
+					"oklch(75% 0.13 152)",
+					"oklch(85% 0.13 152)",
+					"oklch(95% 0.13 152)"
+				]
+			},
+			"done-green-soft": {
+				"role": "tertiary",
+				"displayName": "Done Green Wash",
+				"canonical": "oklch(0.55 0.13 152 / 0.1)",
+				"dark": "oklch(0.74 0.14 152 / 0.12)",
+				"tonalRamp": [
+					"oklch(15% 0.13 152)",
+					"oklch(27% 0.13 152)",
+					"oklch(39% 0.13 152)",
+					"oklch(51% 0.13 152)",
+					"oklch(63% 0.13 152)",
+					"oklch(75% 0.13 152)",
+					"oklch(85% 0.13 152)",
+					"oklch(95% 0.13 152)"
+				]
+			},
+			"needs-you-amber": {
+				"role": "tertiary",
+				"displayName": "Needs-You Amber",
+				"canonical": "oklch(0.51 0.12 66)",
+				"dark": "oklch(0.8 0.13 80)",
+				"tonalRamp": [
+					"oklch(15% 0.12 70)",
+					"oklch(27% 0.12 70)",
+					"oklch(39% 0.12 70)",
+					"oklch(51% 0.12 70)",
+					"oklch(63% 0.12 70)",
+					"oklch(75% 0.12 70)",
+					"oklch(85% 0.12 70)",
+					"oklch(95% 0.12 70)"
+				]
+			},
+			"needs-you-amber-soft": {
+				"role": "tertiary",
+				"displayName": "Needs-You Amber Wash",
+				"canonical": "oklch(0.7 0.14 80 / 0.14)",
+				"dark": "oklch(0.8 0.13 80 / 0.12)",
+				"tonalRamp": [
+					"oklch(15% 0.12 80)",
+					"oklch(27% 0.12 80)",
+					"oklch(39% 0.12 80)",
+					"oklch(51% 0.12 80)",
+					"oklch(63% 0.12 80)",
+					"oklch(75% 0.12 80)",
+					"oklch(85% 0.12 80)",
+					"oklch(95% 0.12 80)"
+				]
+			},
+			"failed-red": {
+				"role": "tertiary",
+				"displayName": "Failed Red",
+				"canonical": "oklch(0.55 0.2 27)",
+				"dark": "oklch(0.7 0.17 25)",
+				"tonalRamp": [
+					"oklch(15% 0.18 27)",
+					"oklch(27% 0.18 27)",
+					"oklch(39% 0.18 27)",
+					"oklch(51% 0.18 27)",
+					"oklch(63% 0.18 27)",
+					"oklch(75% 0.18 27)",
+					"oklch(85% 0.18 27)",
+					"oklch(95% 0.18 27)"
+				]
+			},
+			"failed-red-soft": {
+				"role": "tertiary",
+				"displayName": "Failed Red Wash",
+				"canonical": "oklch(0.55 0.2 27 / 0.09)",
+				"dark": "oklch(0.7 0.17 25 / 0.13)",
+				"tonalRamp": [
+					"oklch(15% 0.18 27)",
+					"oklch(27% 0.18 27)",
+					"oklch(39% 0.18 27)",
+					"oklch(51% 0.18 27)",
+					"oklch(63% 0.18 27)",
+					"oklch(75% 0.18 27)",
+					"oklch(85% 0.18 27)",
+					"oklch(95% 0.18 27)"
+				]
+			},
+			"ground": {
+				"role": "neutral",
+				"displayName": "Cool Ground",
+				"canonical": "oklch(0.984 0.0015 264)",
+				"dark": "oklch(0.158 0.005 264)",
+				"tonalRamp": [
+					"oklch(15% 0.004 264)",
+					"oklch(27% 0.004 264)",
+					"oklch(39% 0.004 264)",
+					"oklch(51% 0.004 264)",
+					"oklch(63% 0.004 264)",
+					"oklch(75% 0.004 264)",
+					"oklch(85% 0.004 264)",
+					"oklch(95% 0.004 264)"
+				]
+			},
+			"panel": {
+				"role": "neutral",
+				"displayName": "Panel White",
+				"canonical": "oklch(1 0 0)",
+				"dark": "oklch(0.188 0.006 264)",
+				"tonalRamp": [
+					"oklch(15% 0.004 264)",
+					"oklch(27% 0.004 264)",
+					"oklch(39% 0.004 264)",
+					"oklch(51% 0.004 264)",
+					"oklch(63% 0.004 264)",
+					"oklch(75% 0.004 264)",
+					"oklch(85% 0.004 264)",
+					"oklch(95% 0.004 264)"
+				]
+			},
+			"sunken": {
+				"role": "neutral",
+				"displayName": "Sunken Grey",
+				"canonical": "oklch(0.966 0.003 264)",
+				"dark": "oklch(0.172 0.005 264)",
+				"tonalRamp": [
+					"oklch(15% 0.004 264)",
+					"oklch(27% 0.004 264)",
+					"oklch(39% 0.004 264)",
+					"oklch(51% 0.004 264)",
+					"oklch(63% 0.004 264)",
+					"oklch(75% 0.004 264)",
+					"oklch(85% 0.004 264)",
+					"oklch(95% 0.004 264)"
+				]
+			},
+			"hairline": {
+				"role": "neutral",
+				"displayName": "Hairline",
+				"canonical": "oklch(0.919 0.004 264)",
+				"dark": "oklch(0.262 0.007 264)",
+				"tonalRamp": [
+					"oklch(15% 0.004 264)",
+					"oklch(27% 0.004 264)",
+					"oklch(39% 0.004 264)",
+					"oklch(51% 0.004 264)",
+					"oklch(63% 0.004 264)",
+					"oklch(75% 0.004 264)",
+					"oklch(85% 0.004 264)",
+					"oklch(95% 0.004 264)"
+				]
+			},
+			"ink": {
+				"role": "neutral",
+				"displayName": "Ink",
+				"canonical": "hsl(0, 0%, 3.9%)",
+				"dark": "hsl(0, 0%, 92%)",
+				"tonalRamp": [
+					"oklch(15% 0 0)",
+					"oklch(27% 0 0)",
+					"oklch(39% 0 0)",
+					"oklch(51% 0 0)",
+					"oklch(63% 0 0)",
+					"oklch(75% 0 0)",
+					"oklch(85% 0 0)",
+					"oklch(95% 0 0)"
+				]
+			},
+			"ink-muted": {
+				"role": "neutral",
+				"displayName": "Muted Ink",
+				"canonical": "hsl(0, 0%, 38%)",
+				"dark": "hsla(0, 0%, 70%, 0.8)",
+				"tonalRamp": [
+					"oklch(15% 0 0)",
+					"oklch(27% 0 0)",
+					"oklch(39% 0 0)",
+					"oklch(51% 0 0)",
+					"oklch(63% 0 0)",
+					"oklch(75% 0 0)",
+					"oklch(85% 0 0)",
+					"oklch(95% 0 0)"
+				]
+			},
+			"diagram-ground": {
+				"role": "neutral",
+				"displayName": "Diagram Ground",
+				"canonical": "#f3f4f6",
+				"dark": "inverted with the image: invert(0.92) hue-rotate(180deg) saturate(1.4)",
+				"tonalRamp": [
+					"oklch(15% 0.004 264)",
+					"oklch(27% 0.004 264)",
+					"oklch(39% 0.004 264)",
+					"oklch(51% 0.004 264)",
+					"oklch(63% 0.004 264)",
+					"oklch(75% 0.004 264)",
+					"oklch(85% 0.004 264)",
+					"oklch(95% 0.004 264)"
+				]
+			}
+		},
+		"typographyMeta": {
+			"display": {
+				"displayName": "Display",
+				"purpose": "The one hero sentence per page."
+			},
+			"headline": {
+				"displayName": "Headline",
+				"purpose": "Section titles."
+			},
+			"title": {
+				"displayName": "Title",
+				"purpose": "Card and run titles."
+			},
+			"body": {
+				"displayName": "Body",
+				"purpose": "Leads and prose; panels use body-small."
+			},
+			"body-small": {
+				"displayName": "Body Small",
+				"purpose": "Text inside panels and cards."
+			},
+			"mono": {
+				"displayName": "Mono",
+				"purpose": "Paths, commands, file content."
+			},
+			"label": {
+				"displayName": "Label",
+				"purpose": "Chips, counts, title-bar tags."
+			}
+		},
+		"shadows": [
+			{
+				"name": "of-1",
+				"value": "0 1px 2px oklch(0.2 0.02 264 / 0.05), 0 0 0 1px oklch(0.2 0.02 264 / 0.015)",
+				"dark": "0 1px 2px oklch(0 0 0 / 0.3)",
+				"purpose": "Rest: cards, commands, tags."
+			},
+			{
+				"name": "of-2",
+				"value": "0 4px 12px -4px oklch(0.2 0.02 264 / 0.1), 0 1px 2px oklch(0.2 0.02 264 / 0.06)",
+				"dark": "0 6px 16px -4px oklch(0 0 0 / 0.5), 0 1px 2px oklch(0 0 0 / 0.3)",
+				"purpose": "Raised: file tree, primary button, active tab."
+			},
+			{
+				"name": "of-3",
+				"value": "0 24px 48px -16px oklch(0.2 0.02 264 / 0.18), 0 4px 12px -4px oklch(0.2 0.02 264 / 0.08)",
+				"dark": "0 28px 56px -16px oklch(0 0 0 / 0.7), 0 2px 6px oklch(0 0 0 / 0.3)",
+				"purpose": "Window frames, hovered cards, travelling board cards."
+			}
+		],
+		"motion": [
+			{
+				"name": "ease-of",
+				"value": "cubic-bezier(0.16, 1, 0.3, 1)",
+				"purpose": "Every transition and keyframe."
+			},
+			{
+				"name": "of-enter",
+				"value": "0.5s: opacity 0, translateY(6px) → rest, once",
+				"purpose": "A log line, a card, a reply arrives already readable."
+			},
+			{
+				"name": "of-digit",
+				"value": "0.42s: opacity 0, translateY(0.45em), blur(3px) → rest",
+				"purpose": "A changing digit (clock, cost) or the copied check."
+			},
+			{
+				"name": "of-pulse",
+				"value": "1.6s infinite: ring 0 → 6px of studio blue at 45%",
+				"purpose": "The working dot."
+			},
+			{
+				"name": "of-signal",
+				"value": "1.4s infinite: translateX(-100%) → 400%",
+				"purpose": "A signal travelling from cause to effect."
+			},
+			{
+				"name": "flip-travel",
+				"value": "FLIP transform with ease-of",
+				"purpose": "Board cards moving between columns."
+			},
+			{
+				"name": "reduced-motion",
+				"value": "prefers-reduced-motion: reduce → animations off, demos static",
+				"purpose": "Mandatory."
+			}
+		],
+		"breakpoints": [
+			{
+				"name": "sm",
+				"value": "640px"
+			},
+			{
+				"name": "notes-hide",
+				"value": "40rem"
+			},
+			{
+				"name": "md",
+				"value": "768px"
+			},
+			{
+				"name": "lg",
+				"value": "1024px"
+			},
+			{
+				"name": "xl",
+				"value": "1280px"
+			}
+		]
+	},
+	"components": [
+		{
+			"name": "Primary Button",
+			"kind": "button",
+			"refersTo": "button-primary",
+			"description": "The one main action: Get started.",
+			"html": "<a class=\"ds-btn-primary\" href=\"#\">Get started <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14\"/><path d=\"m12 5 7 7-7 7\"/></svg></a>",
+			"css": ".ds-btn-primary{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 20px;border-radius:12px;background:var(--color-fd-foreground,hsl(0,0%,3.9%));color:var(--color-fd-background,hsl(0,0%,96%));font:500 15px/1 \"Geist Variable\",system-ui,sans-serif;text-decoration:none;box-shadow:var(--of-shadow-2);transition:opacity .2s}.ds-btn-primary:hover{opacity:.9}.ds-btn-primary svg{transition:transform .3s cubic-bezier(.16,1,.3,1)}.ds-btn-primary:hover svg{transform:translateX(2px)}.ds-btn-primary:focus-visible{outline:2px solid var(--color-fd-primary,oklch(.5 .19 262));outline-offset:2px}"
+		},
+		{
+			"name": "Copy Command",
+			"kind": "input",
+			"refersTo": "copy-command",
+			"description": "A command to paste, with a copy button.",
+			"html": "<div class=\"ds-cmd\"><span class=\"ds-cmd-p\">$</span><code>brew install openfabriq/tap/openfabriq</code><button class=\"ds-cmd-b\" aria-label=\"Copy\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"8\" y=\"8\" width=\"14\" height=\"14\" rx=\"2\"/><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"/></svg></button></div>",
+			"css": ".ds-cmd{display:flex;align-items:center;gap:10px;height:44px;padding:0 6px 0 16px;border:1px solid var(--of-line,oklch(.919 .004 264));border-radius:12px;background:var(--of-panel,#fff);box-shadow:var(--of-shadow-1);font:13px \"Geist Mono Variable\",ui-monospace,monospace}.ds-cmd code{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ds-cmd-p{color:var(--color-fd-muted-foreground,hsl(0,0%,38%))}.ds-cmd-b{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:0;border-radius:8px;background:none;color:var(--color-fd-muted-foreground,hsl(0,0%,38%));transition:background .2s,color .2s}.ds-cmd-b:hover{background:var(--color-fd-accent,hsla(0,0%,82%,.5));color:var(--color-fd-foreground,hsl(0,0%,3.9%))}.ds-cmd-b:focus-visible{outline:2px solid var(--color-fd-primary,oklch(.5 .19 262));outline-offset:2px}"
+		},
+		{
+			"name": "Window",
+			"kind": "card",
+			"refersTo": "window",
+			"description": "A file or terminal framed with its path.",
+			"html": "<div class=\"ds-win\"><div class=\"ds-win-bar\"><span class=\"ds-win-dots\"><i></i><i></i><i></i></span><span class=\"ds-win-t\">openfabriq/factory.yaml</span><span class=\"ds-win-x\">Example data</span></div><pre class=\"ds-win-c\">repository: acme/web-app\nmodel: sonnet</pre></div>",
+			"css": ".ds-win{overflow:hidden;border:1px solid var(--of-line,oklch(.919 .004 264));border-radius:16px;background:var(--of-panel,#fff);box-shadow:var(--of-shadow-3)}.ds-win-bar{display:flex;align-items:center;gap:12px;height:40px;padding:0 16px;border-bottom:1px solid var(--of-line,oklch(.919 .004 264));background:color-mix(in oklch,var(--of-sunken,oklch(.966 .003 264)) 60%,transparent)}.ds-win-dots{display:flex;gap:6px}.ds-win-dots i{width:10px;height:10px;border-radius:50%;background:color-mix(in oklch,currentColor 12%,transparent)}.ds-win-t{flex:1;font:12px \"Geist Mono Variable\",monospace;color:var(--color-fd-muted-foreground,hsl(0,0%,38%))}.ds-win-x{padding:2px 8px;border:1px solid var(--of-line,oklch(.919 .004 264));border-radius:999px;font-size:11px;color:var(--color-fd-muted-foreground,hsl(0,0%,38%))}.ds-win-c{margin:0;padding:16px 20px;font:13px/1.75 \"Geist Mono Variable\",monospace}"
+		},
+		{
+			"name": "Template Card",
+			"kind": "card",
+			"refersTo": "template-card",
+			"description": "A template in the catalog; the whole card links.",
+			"html": "<a class=\"ds-tc\" href=\"#\"><div class=\"ds-tc-img\">workflow</div><div class=\"ds-tc-b\"><h3>WordPress to Astro</h3><p>Migrates a WordPress site to Astro, page by page.</p><span class=\"ds-tag\">issue labeled</span></div></a>",
+			"css": ".ds-tc{display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--of-line,oklch(.919 .004 264));border-radius:16px;background:var(--of-panel,#fff);box-shadow:var(--of-shadow-1);color:inherit;text-decoration:none;transition:box-shadow .3s cubic-bezier(.16,1,.3,1),border-color .3s,translate .3s}.ds-tc:hover{translate:0 -2px;border-color:color-mix(in oklch,var(--color-fd-primary,oklch(.5 .19 262)) 30%,transparent);box-shadow:var(--of-shadow-3)}.ds-tc:focus-visible{outline:2px solid var(--color-fd-primary,oklch(.5 .19 262));outline-offset:2px}.ds-tc-img{aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;background:#f3f4f6;border-bottom:1px solid var(--of-line,oklch(.919 .004 264));font:12px monospace;color:#71717a}.ds-tc-b{padding:20px}.ds-tc h3{margin:0;font:600 17px/1.375 \"Geist Variable\",sans-serif;letter-spacing:-.025em}.ds-tc p{margin:8px 0 16px;font-size:14px;line-height:1.625;color:var(--color-fd-muted-foreground,hsl(0,0%,38%))}.ds-tag{display:inline-block;padding:2px 6px;border-radius:6px;background:var(--of-sunken,oklch(.966 .003 264));font:11px \"Geist Mono Variable\",monospace;color:var(--color-fd-muted-foreground,hsl(0,0%,38%))}"
+		},
+		{
+			"name": "Search Field",
+			"kind": "input",
+			"description": "The catalog search.",
+			"html": "<input class=\"ds-search\" type=\"search\" placeholder=\"Search: review, Sentry, schedule…\">",
+			"css": ".ds-search{height:44px;width:100%;padding:0 16px;border:1px solid var(--of-line,oklch(.919 .004 264));border-radius:12px;background:var(--of-panel,#fff);box-shadow:var(--of-shadow-1);font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s}.ds-search:focus{border-color:color-mix(in oklch,var(--color-fd-primary,oklch(.5 .19 262)) 50%,transparent);box-shadow:0 0 0 4px color-mix(in oklch,var(--color-fd-primary,oklch(.5 .19 262)) 10%,transparent)}"
+		},
+		{
+			"name": "Segmented Tabs",
+			"kind": "nav",
+			"refersTo": "segmented-tab",
+			"description": "Switches between causes or studio views.",
+			"html": "<div class=\"ds-seg\" role=\"tablist\"><button class=\"on\">A label is added</button><button>A review is asked</button></div>",
+			"css": ".ds-seg{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--of-line,oklch(.919 .004 264));border-radius:12px;background:var(--of-sunken,oklch(.966 .003 264))}.ds-seg button{height:36px;padding:0 14px;border:0;border-radius:8px;background:none;font:500 14px \"Geist Variable\",sans-serif;color:var(--color-fd-muted-foreground,hsl(0,0%,38%));transition:color .3s,background-color .3s,box-shadow .3s}.ds-seg button:hover{color:var(--color-fd-foreground,hsl(0,0%,3.9%))}.ds-seg button.on{background:var(--of-panel,#fff);color:var(--color-fd-foreground,hsl(0,0%,3.9%));box-shadow:var(--of-shadow-2)}.ds-seg button:focus-visible{outline:2px solid var(--color-fd-primary,oklch(.5 .19 262));outline-offset:2px}"
+		},
+		{
+			"name": "Status Pill",
+			"kind": "chip",
+			"refersTo": "status-pill-working",
+			"description": "A run state: working pulses, done is green.",
+			"html": "<span class=\"ds-pill w\"><i></i>Working</span> <span class=\"ds-pill d\"><i></i>Succeeded</span>",
+			"css": ".ds-pill{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;font:500 12px \"Geist Variable\",sans-serif}.ds-pill i{width:6px;height:6px;border-radius:50%;background:currentColor}.ds-pill.w{background:var(--of-accent-soft,oklch(.54 .19 262 / .08));color:var(--color-fd-primary,oklch(.5 .19 262))}.ds-pill.w i{animation:ds-pulse 1.6s cubic-bezier(.16,1,.3,1) infinite}.ds-pill.d{background:var(--of-ok-soft,oklch(.55 .13 152 / .1));color:var(--of-ok,oklch(.55 .13 152))}@keyframes ds-pulse{0%{box-shadow:0 0 0 0 color-mix(in oklch,currentColor 45%,transparent)}100%{box-shadow:0 0 0 6px transparent}}@media (prefers-reduced-motion:reduce){.ds-pill.w i{animation:none}}"
+		}
+	],
+	"narrative": {
+		"northStar": "The Studio, Seen From Outside",
+		"overview": "The landing (`/`) and the templates catalog (`/templates/`) are drawn in the product's own studio: the same faces, grounds, accent, state hues and window frames the visitor will meet after install. Proof comes from real artifacts (files, a plan, a board, a run log) set in window frames; the page persuades through craft, not decoration. The docs pages keep Fumadocs' own styles and share only the accent, the faces and the focus ring.\n\nDensity is calm: near-white panels on a cool grey ground, wide air between sections, hierarchy carried by scale contrast alone. Motion is the studio's: values arrive, work breathes, cards travel. Everything moving can be paused and stops under reduced motion.",
+		"keyCharacteristics": [
+			"One accent (studio blue); state hues only for states.",
+			"Geist for prose and headings, Geist Mono for paths, commands, triggers and file content.",
+			"Hairline borders, 12–16px radii, layered soft shadows.",
+			"Files, terminals and studio views always sit in a window frame.",
+			"Tabular numerals for every clock, cost and count.",
+			"Dark theme mirrors the studio's dark, token for token."
+		],
+		"rules": [
+			{
+				"name": "The One Hue Per State Rule",
+				"body": "Blue means working, amber means needs you, green means done or applied, red means failed or refused. A state hue never decorates; a decoration never borrows a state hue.",
+				"section": "colors"
+			},
+			{
+				"name": "The Agent Swatch Exception",
+				"body": "An agent's identity is an 8px square at `oklch(0.64 0.13 <hue>)`, the studio's agent mark. It is the only place a free hue appears.",
+				"section": "colors"
+			},
+			{
+				"name": "The Scale-Only Hierarchy Rule",
+				"body": "Hierarchy comes from size and weight contrast, never from colored, uppercase or tracked-out labels above headings.",
+				"section": "typography"
+			},
+			{
+				"name": "The Tabular Rule",
+				"body": "Every clock, cost, duration and count uses tabular numerals; a changing value animates digit by digit (`of-digit`).",
+				"section": "typography"
+			},
+			{
+				"name": "The Lift On Intent Rule",
+				"body": "A card rises one step on hover (rest → window, 2px up, border tinted with blue at 30%) and nothing else changes.",
+				"section": "elevation"
+			},
+			{
+				"name": "The One Surface Diagram Rule",
+				"body": "Workflow diagrams are light PNGs on the fixed light diagram ground; in dark mode the image and its ground are inverted together (`invert(0.92) hue-rotate(180deg) saturate(1.4)`), so they stay one surface and keep their hues.",
+				"section": "shapes"
+			}
+		],
+		"dos": [
+			"Do take every color from the `of-*` and `fd-*` tokens so the dark theme follows.",
+			"Do frame files, terminals and studio views in a window with their real path.",
+			"Do use the easing `cubic-bezier(0.16, 1, 0.3, 1)` for every transition and keyframe.",
+			"Do give every looping demo a pause control and an in-view start.",
+			"Do filter a workflow image and its ground together in dark mode."
+		],
+		"donts": [
+			"Don't introduce a second accent or use a state hue for decoration.",
+			"Don't put uppercase or tracked eyebrow labels above headings.",
+			"Don't use hard offset shadows or flat borderless cards; depth is hairline plus soft layered shadow.",
+			"Don't animate anything that keeps moving under `prefers-reduced-motion`.",
+			"Don't show invented numbers, logos or quotes as proof; mark simulated content \"Example data\"."
+		]
+	}
+}

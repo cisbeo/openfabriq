@@ -1,0 +1,49 @@
+---
+title: Permissions
+description: Every word of can, and what it does for each source.
+---
+
+Every word of `can`, its effect for each source of a run, and what the engine refuses whatever `can` says. Without `can`, an agent can only read.
+
+## Words of `can`
+
+| Word | Effect on GitHub |
+| --- | --- |
+| `add_comment` | Comments on the issue or the pull request |
+| `add_labels` | Adds labels; `{ add_labels: [a, b] }` allows only those |
+| `remove_labels` | Removes labels, with the same restriction |
+| `create_pull_request` | Pushes a branch and opens a pull request; `{ create_pull_request: [a, b] }` puts those labels on every pull request it opens |
+| `push_to_pull_request` | Pushes commits to the current pull request |
+| `request_changes` | Publishes a review that requests changes |
+| `create_issue` | Creates an issue; `{ create_issue: [a, b] }` puts those labels on every issue it opens |
+| `close_issue` | Closes the issue of the run, never another one |
+| `close_pr` | Closes the pull request of the run, without merging it |
+| `merge_pull_request` | Merges the pull request of the run, only under its conditions (`labels`, `only_paths`, `except_paths`; `paths` is the old name of `only_paths`, still read) and the engine's locks |
+
+On `create_issue` and `create_pull_request`, the agent does not choose the listed labels. Each one starts `issue.labeled` or `pull_request.labeled`, so another automation can listen to those only. `validate` refuses the list when the automation itself listens to that `labeled` event without a `labels` filter, or with one of those labels.
+
+`merge_pull_request` needs at least one condition, and is refused with `from: anyone`. See [Auto-merge](/factory/automations/#auto-merge). Without it, a person merges.
+
+## Per source
+
+| Word | GitHub | Slack | Linear | Sentry | Webhook |
+| --- | --- | --- | --- | --- | --- |
+| `add_comment` | Issue or PR | Reply in the thread | Comment on the Linear issue | Note on the Sentry issue | Nowhere to answer |
+| `add_labels`, `remove_labels` | Issue or PR | Refused | Labels of the Linear issue | Refused | Refused |
+| `create_pull_request` | From an issue or a run with no subject; not from a PR | Yes, link posted in the thread | Yes, identifier in the title | Yes, with the Sentry link | Yes |
+| `create_issue` | Yes | Yes | Yes, with the Linear link | Yes, with the Sentry link | Yes |
+| `push_to_pull_request`, `request_changes`, `close_pr`, `merge_pull_request` | On a PR | Refused | Refused | Refused | Refused |
+| `close_issue` | On an issue | Refused | Refused | Refused | Refused |
+
+A run with no issue or pull request, such as a schedule or a push, has nothing to comment on, label or close.
+
+`validate` refuses a word that makes no sense for an automation that only listens to that source. When the automation also listens to GitHub, the engine refuses such an output at run time, by the run's source.
+
+## What the engine always refuses
+
+- Code (`create_pull_request`, `push_to_pull_request`) whose [checks](/factory/harness/#checks) still fail at the end of the run.
+- Commits that change a file under `.github/workflows/`.
+- More than one run's share of writes, so an agent looping on a tool cannot flood anyone nor hold up the other projects' writes: 5 issues, 10 comments, 3 change requests, 5 `add_labels` and 5 `remove_labels` calls of at most 20 labels each, and one close. A label repeated in a call is written once.
+- Anything outside `can`.
+
+The engine closes last, after the run's other outputs, so the comment that explains why comes first. Refused outputs are recorded in the run and shown in the studio's **Outputs** tab.

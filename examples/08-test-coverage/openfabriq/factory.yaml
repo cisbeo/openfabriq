@@ -1,0 +1,21 @@
+name: Test coverage factory
+description: Every night, an agent picks the least-tested module, adds behavioral tests for it and opens a pull request. If a test reveals a bug, it opens an issue instead. A human merges.
+repository: acme/api-service
+maintainers: [alice]
+model: sonnet
+timezone: Europe/Paris # the nightly run's clock
+
+setup: pnpm install --frozen-lockfile
+
+commands:
+  test: pnpm test
+  coverage: pnpm vitest run --coverage --coverage.reporter=json-summary # writes coverage/coverage-summary.json
+  lint: pnpm lint
+  typecheck: pnpm typecheck
+checks: [test, lint, typecheck]
+
+limits:
+  usd_per_run: 4
+  usd_per_day: 10
+  minutes_per_run: 45
+answer_mentions: true # the agents that open pull requests answer a maintainer's @openfabriq in a comment on them; false turns it off

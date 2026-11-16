@@ -1,0 +1,15 @@
+{
+	"$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+	"name": "openfabriq",
+	"owner": { "name": "openfabriq" },
+	"metadata": {
+		"description": "The Claude Code plugin of openfabriq, the engine that runs a software factory described in your repository."
+	},
+	"plugins": [
+		{
+			"name": "openfabriq",
+			"source": "./packages/cli/plugin",
+			"description": "Set up, change and diagnose the openfabriq/ folder of a repository in a conversation. Needs the openfabriq command."
+		}
+	]
+}

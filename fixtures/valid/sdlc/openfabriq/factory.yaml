@@ -1,0 +1,11 @@
+name: Task app factory
+description: From issue to review-ready pull request. Triage checks the contract, an agent implements, another reviews adversarially, a human merges.
+repository: acme/task-app
+maintainers: [ada]
+model: sonnet
+
+limits:
+  usd_per_run: 5
+  usd_per_day: 30
+  minutes_per_run: 45
+  review_rounds: 3

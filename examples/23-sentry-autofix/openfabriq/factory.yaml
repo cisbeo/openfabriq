@@ -1,0 +1,31 @@
+name: Sentry autofix factory
+description: A new production error in Sentry becomes a pull request with a regression test and the fix; an issue when the fix is not small; a note when it is noise. A human merges.
+repository: acme/web-app
+maintainers: [alice]
+model: sonnet
+
+integrations:
+  sentry:
+    organization: acme # the Sentry project whose new issues the engine reads
+    project: web-app
+
+setup: pnpm install --frozen-lockfile
+
+# The harness: the engine runs the checks before any code leaves for GitHub.
+commands:
+  test: pnpm test
+  lint: pnpm lint
+  typecheck: pnpm typecheck
+checks: [test, lint, typecheck]
+
+mcp:
+  sentry:
+    url: https://mcp.sentry.dev/mcp
+    secret: MCP_SENTRY_TOKEN # sent as "Authorization: Bearer"; its value: openfabriq secret set MCP_SENTRY_TOKEN
+
+limits:
+  usd_per_run: 5
+  usd_per_day: 30
+  minutes_per_run: 45
+  review_rounds: 3
+answer_mentions: true # the agents that open pull requests answer a maintainer's @openfabriq in a comment on them; false turns it off

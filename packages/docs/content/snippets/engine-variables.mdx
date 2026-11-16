@@ -1,0 +1,19 @@
+| Variable | What it is | Values | Where to get it |
+| --- | --- | --- | --- |
+| `ANTHROPIC_API_KEY` | The Claude credential of every run, billed per token | `sk-ant-api03-…` | [Claude Console](https://platform.claude.com), *API keys* |
+| `CLAUDE_CODE_OAUTH_TOKEN` | Instead of the key: the Claude subscription of every run | `sk-ant-oat01-…` | `claude setup-token`, on any machine with Claude Code |
+| `GITHUB_APP_ID` | The id of your team's GitHub App, which the engine works as on GitHub | a number: `1234567` | `openfabriq connect github`: see [The GitHub App](/deployment/docker/#the-github-app) |
+| `GITHUB_APP_PRIVATE_KEY` | With `GITHUB_APP_ID`: the app's private key, on one line | base64: `LS0tLS1CRUdJTi…`, or the PEM with `\n` for its line breaks | Printed by `openfabriq connect github` |
+| `GH_TOKEN` | Instead of the app: the GitHub account the engine reads and writes with | `ghp_…`, a classic token | GitHub, see [A token instead of the app](/deployment/docker/#a-token-instead-of-the-app) |
+| `GIT_USER_NAME` | Optional with the app, whose name the commits carry otherwise; with a token, the name of the author of the factory's commits | any text: `Acme factory` | Your choice: a bot name makes it clear |
+| `GIT_USER_EMAIL` | Optional with the app, whose address the commits carry otherwise; with a token, the email of the author of the factory's commits | an email address: `factory@acme.dev` | Your choice |
+| `OPENFABRIQ_REPOSITORIES` | The GitHub repositories whose factory the engine runs | `owner/name`, comma-separated: `acme/web-app,acme/api` | Each must have an `openfabriq/` folder on its default branch, and the app, or `GH_TOKEN`, must have access to it |
+| `OPENFABRIQ_STUDIO_PASSWORD` | Optional: the password of the studio's sign-in form | 16 characters or more: the output of `openssl rand -base64 24` | Your choice |
+| `OPENFABRIQ_STUDIO_URL` | Optional, with the password or GitHub: the studio's https address, which it then accepts | an `https://` address: `https://factory.example.com` | A domain your proxy sends to the `engine` service, port `4311`: see [Open the studio](/deployment/docker/#open-the-studio) |
+| `GITHUB_APP_CLIENT_ID` | Optional, with the app and `OPENFABRIQ_STUDIO_URL`: sign-in with GitHub to the studio | `Iv23…` | The app's settings on GitHub: see [Sign in with GitHub](/deployment/docker/#sign-in-with-github) |
+| `GITHUB_APP_CLIENT_SECRET` | With `GITHUB_APP_CLIENT_ID`: the app's client secret | a long hexadecimal text | *Generate a new client secret* in the app's settings, or printed by `openfabriq connect github --url` |
+| `OPENFABRIQ_APT_PACKAGES` | Optional: Debian packages your factory's commands need, installed when the image is built | package names, separated by spaces: `php-cli composer` | What `openfabriq doctor` lists in the logs: see [Programs your factory needs](/deployment/docker/#programs-your-factory-needs) |
+| `OPENFABRIQ_MAX_RUNS` | Optional: how many runs go at once, all projects together; the others wait their turn | a number from 1 to 32: `4` by default. About 1 to 1.5 GB of memory each, with a browser: `2` under 4 GB, `6` to `8` on 16 GB | Your choice, by the server's memory (`free -h`) |
+| `OPENFABRIQ_INTERVAL` | Optional: how often the engine reads GitHub, in seconds | `60` by default, `10` or more. Each read costs about 3 calls per repository; a GitHub App allows 5,000 an hour, shared by the repositories it is installed on: `15` fits a few repositories | Your choice |
+
+One of the two Claude variables is required, and `OPENFABRIQ_REPOSITORIES`, with either the app's two variables, or `GH_TOKEN`, `GIT_USER_NAME` and `GIT_USER_EMAIL`: the container says which one is missing and stops. A password shorter than 16 characters, an address without the password or GitHub, or one of the two GitHub client variables without the other, stops the engine too.

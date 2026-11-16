@@ -1,0 +1,30 @@
+name: Web app factory
+description: A large factory ordered by area. Delivery at the root, from issue to review-ready pull request; quality, maintenance and security each in their own folder.
+repository: acme/web-app
+maintainers: [alice] # only their actions start the factory
+model: sonnet # the default model of the agents
+timezone: Europe/Paris # the clock of the nightly and weekly runs
+
+setup: pnpm install --frozen-lockfile # install the dependencies in each run's checkout
+commands: # the project's commands, by name
+  test: pnpm test
+  typecheck: pnpm typecheck
+  lint: pnpm lint
+  build: pnpm build
+  dev: pnpm dev
+  coverage: pnpm vitest run --coverage --coverage.reporter=json-summary # writes coverage/coverage-summary.json
+  outdated: pnpm outdated --long
+  install: pnpm install --no-frozen-lockfile
+  audit: pnpm audit --prod --json > audit-report.json # fails when it finds advisories; the report is in the file either way
+checks: [test, typecheck, lint] # run by the engine before any pull request leaves the machine
+
+mcp:
+  docs: # up-to-date documentation of the libraries the code uses
+    url: https://mcp.context7.com/mcp
+
+limits:
+  usd_per_run: 5
+  usd_per_day: 40
+  minutes_per_run: 45
+  review_rounds: 3 # rounds of internal review before a person takes over
+answer_mentions: true # the agents that open pull requests answer a maintainer's @openfabriq in a comment on them; false turns it off

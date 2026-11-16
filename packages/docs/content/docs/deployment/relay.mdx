@@ -1,0 +1,217 @@
+---
+title: Relay
+description: A mailbox on the Internet for your factory, so that Slack, Linear, Sentry or any webhook can reach it while your machine cannot be reached.
+---
+
+**Your engine cannot be called from the Internet**: no public address, no open port, on purpose. It **goes and asks** GitHub every minute with `gh`, like checking a mailbox. Other services **call**: they post each event at once to an address you gave them, a **webhook**, and expect an answer within seconds (Linear within 10). Your engine has no address to give, and a sleeping laptop would not answer.
+
+The relay is that address: a small program **you deploy once**, on your Cloudflare account or your own server, that is always up. Services drop their events there at any time; your engine collects them whenever it is on.
+
+<Places
+	steps={[
+		{
+			icon: "bolt",
+			where: "Online services",
+			title: "Slack, Linear, Sentry, a deploy…",
+			items: ["call, or are asked every minute"],
+		},
+		"a signed webhook",
+		{
+			icon: "inbox",
+			where: "Your Cloudflare account or your server",
+			title: "The relay",
+			accent: true,
+			items: [
+				"always on",
+				"checks who sent it",
+				"keeps each event up to 7 days",
+			],
+		},
+		"the engine connects and collects",
+		{
+			icon: "laptop",
+			where: "Your computer or a server",
+			title: "The engine",
+			items: ["runs the agents", "writes to GitHub"],
+		},
+	]}
+	caption="The engine opens the connection to the relay, never the other way: your machine stays closed."
+/>
+
+## Do you need it?
+
+| You use | Relay | Why |
+| --- | --- | --- |
+| GitHub, schedules | not needed | the engine reads GitHub with `gh` every minute |
+| [Slack](/integrations/slack/) mentions | required | Slack's Events API posts each mention to the relay |
+| [Linear](/integrations/linear/) labels and delegation | required | the openfabriq app in Linear posts a webhook to the relay |
+| [Sentry](/integrations/sentry/) | required | the relay asks Sentry for new issues every minute |
+| [Webhooks](/integrations/webhooks/) from another service (a deploy platform, Stripe, an uptime monitor) | required | the sender only calls |
+
+One relay serves one engine, whatever the number of factories it runs.
+
+## Where to host it
+
+| | Cloudflare | Your own server |
+| --- | --- | --- |
+| What runs | a Worker and one Durable Object on your Cloudflare account | the same code in `workerd`, in Docker |
+| Setup | one command | a domain, ports 80 and 443, `docker compose up -d` |
+| Cost | Cloudflare's free plan is enough for a team's volume | your server |
+| Up | always | when your server is |
+
+Cloudflare is the simplest, with nothing to maintain; your own server suits a team that already runs the [engine in Docker](/deployment/docker/#add-the-relay-on-the-same-server) and wants everything in one place.
+
+<Tabs items={["On Cloudflare", "On your own server"]}>
+<Tab value="On Cloudflare">
+
+You need a Cloudflare account. The `openfabriq` command carries the relay's code: no sources to download.
+
+<Steps>
+<Step>
+
+### Log in to Cloudflare
+
+```bash
+npx wrangler login
+```
+
+</Step>
+<Step>
+
+### Deploy and connect
+
+```bash
+openfabriq connect relay
+```
+
+It checks that Wrangler is logged in, draws a random `ENGINE_TOKEN`, deploys the Worker `openfabriq-relay` with it, checks `/health` and the connection, and saves the address and the token in `~/.openfabriq/secrets.json`:
+
+```text
+Deploying the relay to your Cloudflare account...
+Relay connected: https://openfabriq-relay.<your-subdomain>.workers.dev. Token saved in /home/you/.openfabriq/secrets.json.
+If "openfabriq start" is running, restart it (Ctrl-C, then "openfabriq start"): it reads the connections when it starts.
+Next: "openfabriq connect slack", "linear" or "sentry", or "openfabriq connect webhook <name>".
+```
+
+If Cloudflare says your account has no `workers.dev` subdomain yet, open the dashboard's *Workers & Pages* page once, then run the command again.
+
+</Step>
+</Steps>
+
+**To update it**, update `openfabriq`, then run `openfabriq connect relay` again. It redeploys with a new token; events waiting in the queue are kept.
+
+<Accordions>
+<Accordion title="From Cloudflare's dashboard instead">
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/openfabriq/openfabriq/tree/main/packages/relay)
+
+Cloudflare copies the relay into your GitHub account, creates its Durable Object and asks for `ENGINE_TOKEN`. Draw one with `openssl rand -hex 32` and keep it, then connect your engine:
+
+```bash
+openfabriq connect relay --url https://openfabriq-relay.<your-subdomain>.workers.dev
+```
+
+It asks for the same token, checks the relay and saves it. To update the relay, update the copy in your GitHub account: Cloudflare redeploys it.
+
+</Accordion>
+</Accordions>
+
+</Tab>
+<Tab value="On your own server">
+
+[workerd](https://github.com/cloudflare/workerd), the open-source runtime of Workers, runs the same code; the repository ships a Docker image and a Compose file with [Caddy](https://caddyserver.com) in front for HTTPS. You need a server with Docker (it can be the engine's), a domain that points to it (`relay.example.com`), and ports 80 and 443 open.
+
+<Steps>
+<Step>
+
+### Configure
+
+On the server, in `packages/relay` of the openfabriq sources, write a `.env` file:
+
+```bash
+RELAY_DOMAIN=relay.example.com
+ENGINE_TOKEN=<the output of: openssl rand -hex 32>
+```
+
+</Step>
+<Step>
+
+### Start it
+
+```bash
+docker compose up -d
+curl https://relay.example.com/health
+# {"ok":true}
+```
+
+Caddy gets and renews a Let's Encrypt certificate for `RELAY_DOMAIN`. To update the relay later: `git pull`, then `docker compose up -d --build` in the same folder.
+
+</Step>
+<Step>
+
+### Connect the engine
+
+On the machine that runs `openfabriq start`:
+
+```bash
+openfabriq connect relay --url https://relay.example.com
+```
+
+It asks for `ENGINE_TOKEN`, checks `/health` and the connection, and saves both.
+
+</Step>
+</Steps>
+
+**Keep it safe.** The `relay-data` volume holds the queue and the secrets given to the relay (Linear, Slack, Sentry, webhooks): back it up and protect it like them. What a sender posts while the server is down is lost unless it retries (most do).
+
+<Accordions>
+<Accordion title="Behind your own proxy">
+
+With Traefik, nginx, Coolify…: run only the `relay` service (`docker compose up -d relay`; keep `RELAY_DOMAIN` in `.env`, Compose reads the whole file) and route HTTPS for your domain to its port `8080`. It publishes no port: add `ports: ["127.0.0.1:8080:8080"]` to it, or put it on your proxy's network (on Coolify, give the `relay` service your domain with port 8080). The proxy must pass WebSocket upgrades (the engine connects to `/engine`) and set `X-Forwarded-Proto`.
+
+</Accordion>
+<Accordion title="Without Docker">
+
+```bash
+cd packages/relay
+pnpm bundle                                   # writes dist/index.js
+ENGINE_TOKEN=... pnpm exec workerd serve workerd.capnp
+```
+
+It listens on port 8080 and keeps its data in `./data` (`--socket-addr http=<ip:port>` and `--directory-path data=<dir>` change them).
+
+</Accordion>
+</Accordions>
+
+</Tab>
+</Tabs>
+
+## Connect services through it
+
+```bash
+openfabriq connect slack                  # Slack mentions
+openfabriq connect linear                 # Linear labels and delegation
+openfabriq connect sentry                 # Sentry's new issues
+openfabriq connect webhook <name>         # a webhook of factory.yaml
+```
+
+Restart `openfabriq start`: it connects to the relay when a factory listens to a service, tells it which Sentry projects to watch, and says so when the relay is missing. To check the relay:
+
+```bash
+curl https://<your-relay>/health
+# {"ok":true}
+```
+
+## How it works
+
+1. **Receive.** The relay checks the signature, the proof that the event comes from Linear, Slack, GitHub, Sentry, Stripe or a [Standard Webhooks](https://www.standardwebhooks.com) sender, and answers at once. Sentry is asked instead, every minute, with each automation's `query` passed as is.
+2. **Keep.** The event goes into a queue that survives restarts; a delivery already received is not kept twice. Past 10,000 events or 100 MB waiting, new deliveries get `503` and `Retry-After: 60`.
+3. **Deliver.** Your engine opens a connection with a token only the two of them know (`ENGINE_TOKEN`) and keeps it open. The relay hands over what waited, then each new event. A confirmed event is deleted, an unconfirmed one comes back at the next connection, one never collected is deleted after 7 days: services' data (an issue's text, a webhook body) is never kept longer.
+4. **Finish a Linear install.** Installing openfabriq as an agent in Linear ends in the browser, on an address that must be online: the relay's, which receives Linear's tokens, keeps them and refreshes them.
+
+## Is it safe?
+
+- **It decides and writes nothing.** It never runs an agent, chooses an automation, reads your repository, or writes to GitHub, Slack or Sentry: that stays in the engine. One exception: a fixed "Received" note in a Linear agent session, because Linear wants an answer within seconds and the engine may be asleep.
+- **Every route is closed** except `/health`: the rest needs the engine's token, the sender's valid signature, or, to finish a Linear install, a one-time code the relay gave out.
+- **Its only own secret is `ENGINE_TOKEN`.** `openfabriq connect` gives it the others later, kept in its storage: Linear's, Slack's, your webhooks', the Linear app's token (it can write in Linear on openfabriq's behalf) and your Sentry token (sent only to your Sentry). Revoke either token at any time, in Linear or in Sentry. Slack's bot token stays on your machine.
+- **Its content is data.** Like everything that reaches an agent, an event is marked as data, never as instructions.

@@ -1,0 +1,26 @@
+name: CLA
+
+# A contributor agrees to CLA.md by ticking its box in the pull request's description; the pull request keeps the record.
+# The description is only matched, never run, and no code of the pull request is checked out.
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions: {}
+
+jobs:
+  cla:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    # Maintainers and bots have nothing to sign.
+    if: >-
+      github.event.pull_request.user.type != 'Bot' &&
+      !contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)
+    steps:
+      - name: The box of the Contributor License Agreement is ticked
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if printf '%s' "$BODY" | grep -qiE '^[[:space:]]*- \[x\] I agree to the \[Contributor License Agreement\]'; then exit 0; fi
+          echo "::error::Tick \"I agree to the Contributor License Agreement\" in the pull request's description (CLA.md)."
+          exit 1

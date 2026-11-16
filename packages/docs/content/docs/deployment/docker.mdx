@@ -1,0 +1,381 @@
+---
+title: Docker
+description: One container on an always-on server runs the factory for the whole team. Teammates install nothing.
+---
+
+A team runs its factory with **one engine**, on an always-on server: a VPS (Hetzner, OVHcloud, DigitalOcean…) or a cloud instance (AWS EC2, Google Cloud, Azure). A small Linux instance is usually enough: the model runs at Anthropic, the server runs the agents' tools and your tests. Teammates install nothing: they label an issue, mention the factory in Slack or delegate a Linear issue.
+
+## How it works
+
+<Places
+	steps={[
+		{
+			icon: "laptop",
+			where: "Your computer",
+			title: "You edit the factory",
+			items: ["openfabriq init, validate, plan", "commit and push openfabriq/"],
+		},
+		"git push",
+		{
+			icon: "github",
+			where: "GitHub",
+			title: "Your repository",
+			items: ["openfabriq/ reviewed and merged like code"],
+		},
+		"cloned at each start",
+		{
+			icon: "server",
+			where: "The server",
+			title: "The engine, in Docker",
+			accent: true,
+			items: [
+				"applies the default branch",
+				"openfabriq start, always on",
+				"tokens and logins stay here",
+			],
+		},
+	]}
+/>
+
+The container holds Node, npm, pnpm, Python, git, `gh`, Claude Code, the Linux sandbox, agent-browser with Playwright's headless Chrome, and openfabriq. It is configured by environment variables only. Run it with `docker compose`, or on a platform that deploys a compose file, such as [Coolify](/deployment/coolify/).
+
+At each start, it clones the default branch of each repository, runs `openfabriq apply --yes --project <owner/repo>` (which refuses a `factory.yaml` naming another repository), then `openfabriq start`.
+
+## Before you start
+
+| You need | Why |
+| --- | --- |
+| A Linux server with Docker and Docker Compose | it runs the container |
+| An Anthropic API key, or a Claude subscription for a server only you use | every run of the team uses it: see [which one](#claude-api-key-or-subscription) |
+| Your team's [GitHub App](#the-github-app) | pull requests and comments appear under its name |
+| An `openfabriq/` folder on each repository's default branch | the container applies what is merged |
+
+## Get the two credentials
+
+### Claude: API key or subscription
+
+Pick one:
+
+- **An API key** (`ANTHROPIC_API_KEY`), for a team: create it in the [Claude Console](https://platform.claude.com), ideally in a workspace for the factory alone, with a monthly spend limit.
+- **A subscription token** (`CLAUDE_CODE_OAUTH_TOKEN`), only on a server you alone use: run `claude setup-token` on your computer.
+
+| | API key | Subscription token |
+| --- | --- | --- |
+| Meant for | a team, a shared server | one person's own work, on a server only they use |
+| Billing | per token, on your Anthropic account | your plan's quota, shared with your own sessions |
+| Limits | your Console limits and spend cap | the plan's 5-hour and weekly windows |
+
+If both are set, the key wins, as in Claude Code itself; `openfabriq start` says which one the runs use. With a key, `usd_per_run` and `usd_per_day` in [limits](/factory/factory-yaml/#limits) become real spend, estimated at Anthropic's list prices; the Console's spend limit on the factory's workspace is the hard cap.
+
+### The GitHub App
+
+The engine works on GitHub as an app your team owns: it clones the repositories, watches issues and pull requests, pushes branches, opens pull requests and comments, under the app's name followed by `[bot]`. Unlike a token, it needs no second account, invitation, renewal or single sign-on authorization; it reaches only the repositories it is installed on; and it reads GitHub Actions' results, so a factory with a CI works. The engine gets a token per repository, valid for an hour, and renews it itself.
+
+<Steps>
+<Step>
+
+#### Create the app
+
+On your computer, where a browser opens, with openfabriq installed:
+
+```bash
+openfabriq connect github --org acme
+```
+
+`--org` makes the organization the owner, which takes one of its owners or app managers; without it, the app is yours. The app is private, so every repository of `OPENFABRIQ_REPOSITORIES` must belong to its owner. Add `--workflows` if the agents change files in `.github/workflows/`.
+
+GitHub's creation page opens, filled in. Check the name (GitHub wants one nobody has taken), then select *Create GitHub App*.
+
+</Step>
+<Step>
+
+#### Install it on the repositories
+
+On the install page that follows, choose *Only select repositories*, the ones of `OPENFABRIQ_REPOSITORIES`, then *Install*: *All repositories* would let the engine reach every repository of the owner. To add one later, open `https://github.com/apps/<the app's name>/installations/new`.
+
+</Step>
+<Step>
+
+#### Copy its two variables
+
+The command saves the app on your computer, so `openfabriq start` there works as the app too, and prints `GITHUB_APP_ID` and `GITHUB_APP_PRIVATE_KEY` for the server's `.env`. The key is the app's private key in base64 on one line (a PEM with `\n` for its line breaks works too). Keep it as secret as a password: whoever holds it acts as the app on every repository it is installed on.
+
+</Step>
+</Steps>
+
+The app has no webhook: the engine asks GitHub every minute. With its two variables, the engine uses the app even if `GH_TOKEN` is set. Commits carry the app's name and GitHub address, so GitHub links them to the app; `GIT_USER_NAME` and `GIT_USER_EMAIL` override them. At each start, the logs say whether the app is installed on each repository: `✓ GitHub: the engine works as the app acme-factory[bot], installed on acme/web-app`.
+
+<Accordions>
+<Accordion title="The app's permissions">
+
+On the repositories where it is installed:
+
+| Permission | Access | The engine uses it to |
+| --- | --- | --- |
+| Metadata | Read | read the repository |
+| Contents | Read and write | clone, compare commits, push the agents' branches, merge |
+| Issues | Read and write | read issues and comments, comment, and add labels |
+| Pull requests | Read and write | open, review, comment on and merge pull requests |
+| Checks | Read | read the results of GitHub Actions |
+| Commit statuses | Read | read the combined status of a commit |
+| Actions | Read | read the log of a job that failed |
+| Workflows | Write | only with `--workflows`: push changes to `.github/workflows/` |
+
+</Accordion>
+<Accordion title="Change the key, or set up a server without connect github">
+
+In the app's settings (*Settings › Developer settings › GitHub Apps › Edit*), open *Credentials › Key pairs* and select *New key*. GitHub downloads a `.pem` file: put it on one line for `GITHUB_APP_PRIVATE_KEY`, then delete the old key on the same page.
+
+```bash
+base64 < acme-factory.2026-11-10.private-key.pem | tr -d '\n'
+```
+
+</Accordion>
+<Accordion title="A token instead of the app" id="a-token-instead-of-the-app">
+
+If you cannot create a GitHub App (your organization forbids it, say), set `GH_TOKEN` to a token of the account that will author the pull requests and comments, with `GIT_USER_NAME` and `GIT_USER_EMAIL`. A classic token reaches every repository its account does: use a bot account that is a collaborator of the factory's repositories only.
+
+1. Invite that account to each repository of `OPENFABRIQ_REPOSITORIES` with *Write* access, and accept the invitation as that account.
+2. Signed in as that account, open [Settings › Developer settings › Personal access tokens › Tokens (classic)](https://github.com/settings/tokens/new) and choose *Generate new token (classic)*. Not a fine-grained one: it gets no permission to read GitHub Actions' results (*checks*), so on a repository with a CI the engine cannot read the pull requests and starts nothing. Fill in:
+   - *Note*: a name you will recognize, such as `openfabriq engine`.
+   - *Expiration*: your choice. Note the date: the engine's calls to GitHub fail after it.
+   - *Scopes*: `repo` (it ticks its sub-scopes), and `workflow` only if the agents change files in `.github/workflows/`.
+3. Select *Generate token*. GitHub shows `ghp_…` once.
+4. If the organization uses single sign-on, select *Configure SSO* next to the token, then *Authorize* the organization. Otherwise the token sees none of its repositories.
+5. Check it: `push` must be `true`.
+
+   ```bash
+   export GH_TOKEN=ghp_…
+   gh api repos/acme/web-app --jq .permissions
+   ```
+
+</Accordion>
+</Accordions>
+
+## Install
+
+<Tabs items={["With Claude Code", "By hand"]}>
+<Tab value="With Claude Code" id="with-claude-code">
+
+Once you have the credentials, paste this prompt in Claude Code, on your computer. It does the *By hand* steps on the server over SSH, and asks you to write the credentials into `.env` yourself.
+
+<CopyPrompt kind="install" />
+
+</Tab>
+<Tab value="By hand" id="by-hand">
+
+<Steps>
+<Step>
+
+### Write the configuration
+
+On the server, get openfabriq's sources and write a `.env` file next to `docker-compose.yml`. Every variable is explained in [Configuration](#configuration).
+
+```bash
+git clone %GITHUB_URL% && cd openfabriq
+```
+
+```bash title=".env"
+ANTHROPIC_API_KEY=sk-ant-api03-…
+# CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-…   instead of the key, for a server only you use
+GITHUB_APP_ID=1234567
+GITHUB_APP_PRIVATE_KEY=LS0tLS1CRUdJTi…
+# or, instead of the two lines above, a classic token and the commits' author:
+# GH_TOKEN=ghp_…
+# GIT_USER_NAME=Acme factory
+# GIT_USER_EMAIL=factory@acme.dev
+OPENFABRIQ_REPOSITORIES=acme/web-app,acme/api
+```
+
+</Step>
+<Step>
+
+### Start it
+
+```bash
+docker compose up -d
+docker compose logs -f engine
+```
+
+</Step>
+</Steps>
+
+</Tab>
+</Tabs>
+
+The queue, the runs, the connections and the secrets live in the `engine-data` volume: a restart loses nothing.
+
+<Callout type="warn">
+Then stop the engine on your laptop for these repositories: two engines on one repository each start a run for the same event, so you get two pull requests, and nothing prevents it yet.
+</Callout>
+
+## Open the studio
+
+The studio shows the runs and runs a chat that spends your Claude credential, so it is always locked. Its address also serves Claude Desktop, claude.ai and Claude Code, which read the factories, runs and numbers at `https://factory.example.com/mcp`: see [Connect Claude](/mcp/overview/#connect-claude).
+
+### With a password and a domain
+
+The simplest way in. Add to `.env`:
+
+```bash title=".env"
+OPENFABRIQ_STUDIO_PASSWORD=…   # 16 characters or more: openssl rand -base64 24
+OPENFABRIQ_STUDIO_URL=https://factory.example.com
+```
+
+Then send that domain to the `engine` service, port `4311`, with an https proxy. On **Coolify**: in the resource's settings, give the `engine` service the domain with the port, `https://factory.example.com:4311`, put the two variables in *Environment Variables*, and deploy; Coolify's proxy gets the certificate.
+
+Open `https://factory.example.com`: the studio asks for the password, then stays open in that browser until the engine restarts. `openfabriq start` prints where to sign in, never the password:
+
+```
+studio: sign in at https://factory.example.com with OPENFABRIQ_STUDIO_PASSWORD
+```
+
+The studio answers only on `127.0.0.1:4310`, `localhost:4310` and that address; any other domain gets `403`. After 10 wrong passwords in 10 minutes from one address, that address waits out the 10 minutes; after 100 from anywhere, every sign-in does. The address is the last one of `X-Forwarded-For`, which your proxy adds: behind a second proxy, such as Cloudflare's, it is that proxy's.
+
+<Callout type="warn">
+Keep the domain private too. The password locks the studio, but its sign-in page is on the Internet if the domain is. Point the domain at the server's Tailscale (or VPN) address only, or allow only your team's IP addresses in the proxy. [Claude Desktop](/mcp/overview/#connect-claude) also needs Anthropic's addresses.
+</Callout>
+
+### Sign in with GitHub
+
+Beyond two or three people, or when the domain is open to [Claude's connector](/mcp/overview/#connect-claude), let each person sign in with their own GitHub account instead of sharing the password. It goes through the engine's [GitHub App](#the-github-app): whoever can write to one of the factory's repositories gets in, and someone removed from them is out within the hour. No database, nothing more to run.
+
+1. In the app's settings (*Settings › Developer settings › GitHub Apps*, your app; the organization's settings for an app it owns), under *Identifying and authorizing users*, add the **Redirect URI** (formerly *Callback URL*) `https://factory.example.com/auth/github/callback`, with its path and without wildcard matching, then **Save changes** at the bottom. Without it, GitHub answers "This GitHub App must be configured with a callback URL". Then **Generate a new client secret**, and copy the *Client ID* and the secret. For a new app, `openfabriq connect github --url https://factory.example.com` does both and prints the two variables.
+2. Add them to `.env`, beside `OPENFABRIQ_STUDIO_URL`:
+
+   ```bash title=".env"
+   GITHUB_APP_CLIENT_ID=Iv23…
+   GITHUB_APP_CLIENT_SECRET=…
+   ```
+
+3. Deploy. The studio shows *Sign in with GitHub*. The first time, GitHub asks the person to authorize the app, which gives the studio their login and nothing else.
+
+The password can stay, for someone without write access. A session lasts a week at most; the bottom of the studio's menu shows who is signed in and signs out. To sign everyone out, generate a new client secret and replace the variable.
+
+Accounts for people not on GitHub, with an invitation list, are planned with [Better Auth](https://www.better-auth.com). Need them? [Open an issue](repo:issues) with your use case.
+
+### Without a domain, or with a second lock
+
+<Accordions>
+<Accordion title="Through an SSH tunnel" id="through-an-ssh-tunnel">
+
+Without a domain, the studio is published on the server's `127.0.0.1:4310` only. Reach it from your laptop through a tunnel, then open `http://127.0.0.1:4310`:
+
+```bash
+ssh -L 4310:127.0.0.1:4310 factory-server
+```
+
+With `OPENFABRIQ_STUDIO_PASSWORD`, it asks for the password. Without it, open the address the engine printed, with its token, which changes at each start:
+
+```bash
+docker compose logs engine | grep "studio on"
+```
+
+Some platforms, Coolify among them, hide the token in the logs: set a password there.
+
+</Accordion>
+<Accordion title="A second lock in front" id="a-second-lock-in-front-optional">
+
+To hide even the sign-in page from strangers, add a lock in your proxy, in front of the studio's own password.
+
+**A browser prompt** (HTTP basic auth) asks for a name and a password before showing anything. With Caddy on the server, hash a password and put the hash in the site's block:
+
+```bash
+docker run --rm caddy:2.10.2 caddy hash-password --plaintext 'a-long-password'
+```
+
+```text title="Caddyfile"
+factory.example.com {
+	basic_auth {
+		admin $2a$14$…   # the hash printed above
+	}
+	reverse_proxy 127.0.0.1:4310
+}
+```
+
+This is a Caddy of its own, not the relay's: with `--profile relay`, the relay and its Caddy run on their own Docker network and cannot reach the engine. On Coolify, its proxy, Traefik, does the same with a `basicauth` middleware.
+
+**Your team's sign-in**: Caddy's [`forward_auth`](https://caddyserver.com/docs/caddyfile/directives/forward_auth) asks an authentication service, with its own sign-in page and session, about each request: [Authelia](https://www.authelia.com), or [oauth2-proxy](https://oauth2-proxy.github.io/oauth2-proxy/) for Google, GitHub or your company's SSO.
+
+</Accordion>
+</Accordions>
+
+## Connect Slack, Linear, Sentry
+
+These services go through the [relay](/deployment/relay/). Connect it first: [on this server](#add-the-relay-on-the-same-server), or, for a relay hosted elsewhere, with `openfabriq connect relay --url`, which asks for the relay's `ENGINE_TOKEN` (`relay.token` in `~/.openfabriq/secrets.json` of the machine that deployed it with `connect relay`). The `openfabriq connect` commands run in the container, and their tokens stay in its volume:
+
+```bash
+docker compose exec engine openfabriq connect slack
+docker compose restart engine
+```
+
+### Add the relay on the same server
+
+Add `RELAY_DOMAIN` and `ENGINE_TOKEN` to `.env`, then:
+
+```bash
+docker compose --profile relay up -d
+docker compose exec engine openfabriq connect relay --url https://<RELAY_DOMAIN>
+```
+
+## Configuration
+
+<include>../../snippets/engine-variables.mdx</include>
+
+A factory's [secrets](/factory/harness/#environment-variables-and-secrets) are kept in the container's volume once it runs, or passed as variables under `environment` in `docker-compose.yml`; a variable wins over the kept value.
+
+```bash
+docker compose exec engine openfabriq secret set DATABASE_URL --project acme/web-app
+```
+
+## Programs your factory needs
+
+At each start, after applying a repository, the container runs `openfabriq doctor` in it: the logs list every program that `setup` or a command starts and the image lacks.
+
+```bash
+docker compose logs engine | grep "is not installed"
+```
+
+To add one, name its Debian packages in `.env`, then rebuild the image:
+
+```bash
+OPENFABRIQ_APT_PACKAGES="php-cli composer"
+```
+
+```bash
+docker compose up -d --build
+```
+
+The image's headless Chrome comes with its libraries and fonts, and `AGENT_BROWSER_EXECUTABLE_PATH` tells agent-browser where it is: the templates' browser-evidence skill uses it to screenshot the pages its agents build and show them in the pull request.
+
+## Keep it up to date
+
+| What changed | Do |
+| --- | --- |
+| a change to `openfabriq/` was merged | `docker compose restart engine`: the container applies the default branch again |
+| a new version of openfabriq | `git pull && docker compose up -d --build` in openfabriq's folder |
+| a repository was removed from `OPENFABRIQ_REPOSITORIES` | it stays applied in the volume, and the engine keeps running it |
+
+## Security
+
+No credential reaches an agent. The GitHub App's key or the GitHub token, the app's per-repository tokens and the studio's password stay with the engine: no agent, command or MCP server receives them, and a factory cannot name the password in its `secrets`. The Claude credential stays with Claude Code. See [What reaches the agent](/reference/security/#what-reaches-the-agent).
+
+One limit of the Agent SDK: an MCP server's token or secrets sit in the arguments of the `claude` process. In Docker, only this container's processes see them, not the sandboxed agents and commands.
+
+### What the sandbox costs the container
+
+The sandbox of agents and commands, bubblewrap, creates Linux namespaces and mounts its own `/proc`. Docker forbids both by default, so `docker-compose.yml` turns off three protections:
+
+| Turned off | What it means |
+| --- | --- |
+| The **seccomp** filter | Every system call is open, including user namespaces, the kernel's largest surface for a privilege escalation |
+| The **AppArmor** profile | Docker's default profile no longer applies to the container |
+| The **masked system paths** | `/proc/kcore`, `/proc/keys`, `/sys/firmware`… become visible |
+
+It does not use `--privileged`: the container has no capabilities at all, and nothing in it can gain privileges.
+
+<Callout type="warn">
+A kernel flaw reached through those system calls would still escape the container, as it would escape a user's session on a Linux machine. Run it on a server dedicated to the factory.
+</Callout>
+
+Ubuntu 23.10 and later restrict user namespaces on the host (`kernel.apparmor_restrict_unprivileged_userns`); this has not been tried yet. If runs with `shell` or `checks` fail with a `bwrap` error, the run says so: nothing runs outside the sandbox.

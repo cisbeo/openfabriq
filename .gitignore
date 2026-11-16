@@ -1,0 +1,17 @@
+node_modules/
+# The maintainers' notes, a private repository linked here.
+/docs
+dist/
+*.tsbuildinfo
+.env*
+.claude/worktrees/
+
+# mutation testing
+.stryker-tmp/
+reports/
+.wrangler/
+packages/cli/release/
+
+# The studio's demo build, made before the docs' site; only its recorded answers (api/) are kept.
+packages/docs/public/studio-demo/*
+!packages/docs/public/studio-demo/api/

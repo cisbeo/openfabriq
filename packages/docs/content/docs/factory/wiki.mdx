@@ -1,0 +1,88 @@
+---
+title: Wiki
+description: The map of your code the engine can keep for people and agents, how to turn it on, how it updates, and how to set it.
+---
+
+A factory can have a wiki: a map of the repository in short Markdown pages, for a newcomer, human or agent. Where things live, how the pieces fit together, where the code starts, what the words mean. An agent that comes with the engine writes it and keeps it up to date, by pull request.
+
+The pages live in your repository, in `wiki/` by default: reviewed like any change, on your branches, with their history in git. People read and search them in the [studio](/studio/wiki/); your agents read the pages they need.
+
+The wiki is one of the [native automations](/factory/native-automations/), off until you turn it on in `factory.yaml`:
+
+```yaml title="openfabriq/factory.yaml"
+wiki: true   # in wiki/, written when you ask
+```
+
+## Generate it the first time
+
+Nothing runs until you ask. Click **Generate the wiki** on the studio's [Wiki page](/studio/wiki/), or run:
+
+```bash
+openfabriq run wiki
+```
+
+`openfabriq start` must be running: it takes the request within a minute. The first run reads the whole repository, writes the pages and opens a pull request. Once you merge it, the wiki shows in the studio.
+
+A run stops at the factory's [`usd_per_run`](/factory/factory-yaml/#limits). On a large repository, a first run may not write every page within it: it lists the rest under *Not written yet* in `index.md`, and the next run goes on from there.
+
+## Keep it up to date
+
+By default, the wiki updates **on demand**: **Update the wiki** in the studio, or `openfabriq run wiki` again. To also update it after each merge on the default branch:
+
+```yaml title="openfabriq/factory.yaml"
+wiki:
+  folder: docs/wiki        # where the pages live (default: wiki)
+  refresh: after_merge     # manual (default) or after_merge
+```
+
+| Key | Purpose | Default |
+| --- | --- | --- |
+| `folder` | The folder of the pages in the repository, relative to its root. Not under `openfabriq/` or `.github/` | `wiki` |
+| `refresh` | `manual`: on demand only. `after_merge`: also after each merge on the default branch | `manual` |
+
+An update rewrites only the pages the new commits make false or incomplete: each page lists the files it comes from under **Sources**, and the agent follows the changed files to the pages that cite them. A merge that only touches the wiki starts nothing, so the wiki never runs on its own pull request.
+
+## Ask for pages
+
+The wiki starts from a plan: *Start here*, *How it fits together*, *Built with*, *Where things live*, *Ways in*, one page per area of the product, *Making a change*, and a *Glossary*. It adapts the plan to the repository: a library has no routes, so *Ways in* lists its public API.
+
+To ask for more, write `openfabriq/wiki.md` in plain words; anyone who knows the product can:
+
+```markdown title="openfabriq/wiki.md"
+- Billing rules: how invoices, credits and refunds work, and who can change them
+- Feature flags: which ones exist, who owns them, how to remove one
+- Decisions: one line per ADR in docs/adr/, what it decided and the files it shapes
+```
+
+The file is optional. `openfabriq plan` shows when it changes, and the next update writes the new pages.
+
+Ask for what the repository holds. The agent writes only what it read in a file, and lists that file under *Sources*: it can map the decisions your ADRs record to the code they shape, but cannot tell why a choice was made when nothing in the repository says so.
+
+## Turn it off
+
+Remove `wiki` from `factory.yaml`, or write `wiki: false`: no more runs, no Wiki page in the studio, nothing told to the agents. The pages already written stay in your repository, and `openfabriq/wiki.md`, if any, is kept but not read. To write the wiki your own way, turn it off and give the job to an agent of your factory.
+
+## The wiki's agent
+
+The engine provides it, so it is not in `openfabriq/agents/`. Your factory's `model` and [limits](/factory/factory-yaml/#limits) apply to it, and the studio's [Agents](/studio/agents/) page shows it, marked *built into openfabriq*, with its runs and their cost.
+
+- It reads the repository, edits files and runs `git` in the [sandbox](/reference/security/), like your agents.
+- It can only open a pull request, and the engine refuses one that touches a file outside the wiki's folder.
+- A person reviews and merges it, like any pull request of the factory.
+
+The name `wiki` is reserved: no agent or automation of your factory can use it, even with the wiki off.
+
+## How agents use it
+
+Once the wiki exists, each agent of your factory is told in one line where it is and to start with its `index.md`. An agent reads only the pages it needs: the wiki costs nothing in a run that does not open it. When a page and the code disagree, the agent is told the code is right.
+
+The studio's [chat](/studio/chat/) reads it too, with its `read_wiki` tool: ask it how a part of the code works.
+
+## In the plan
+
+`openfabriq plan` describes the wiki in one line when it is new or changes:
+
+```text
+Factory settings
+  ~ wiki: the engine keeps docs/wiki/ up to date after each merge, by pull request only, touching docs/wiki/ only
+```

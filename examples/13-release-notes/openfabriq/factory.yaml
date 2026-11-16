@@ -1,0 +1,12 @@
+name: Release notes factory
+description: Every Friday afternoon, an agent turns the week's merged pull requests into a user-facing CHANGELOG entry and opens a pull request with it.
+repository: acme/web-app
+maintainers: [alice]
+model: sonnet
+timezone: Europe/Paris
+
+limits:
+  usd_per_run: 2
+  usd_per_day: 5
+  minutes_per_run: 20
+answer_mentions: true # the agents that open pull requests answer a maintainer's @openfabriq in a comment on them; false turns it off

@@ -1,0 +1,10 @@
+name: Issue triage factory
+description: Every new issue gets a type, a priority and a useful first answer within minutes. Reports that lack what is needed to act get precise questions, and are triaged again once answered.
+repository: acme/open-source-lib
+maintainers: [alice, bob]
+model: sonnet
+
+limits:
+  usd_per_run: 1
+  usd_per_day: 15
+  minutes_per_run: 15

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<!-- No image from elsewhere: a Markdown image in an agent's output could carry data out. -->
+		<meta http-equiv="Content-Security-Policy" content="img-src 'self' data:" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="color-scheme" content="light dark" />
+		<title>openfabriq</title>
+		<meta
+			name="description"
+			content="The openfabriq studio: your software factory on this machine, its runs, agents, workflow and chat."
+		/>
+		<!-- A private app on 127.0.0.1 behind a token: nothing here is for a search engine. -->
+		<meta name="robots" content="noindex, nofollow" />
+		<meta name="application-name" content="openfabriq" />
+		<meta name="apple-mobile-web-app-title" content="openfabriq" />
+		<!-- The --bg tokens of styles.css; use-theme.ts follows a theme picked in the app. -->
+		<meta name="theme-color" content="#f9fafb" media="(prefers-color-scheme: light)" />
+		<meta name="theme-color" content="#0c0d0f" media="(prefers-color-scheme: dark)" />
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+		<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+		<link rel="manifest" href="/manifest.webmanifest" />
+		<script>
+			// Before paint, so a dark screen never flashes white.
+			try {
+				const pick = localStorage.getItem("openfabriq-theme");
+				const dark =
+					pick === "dark" ||
+					(pick !== "light" &&
+						matchMedia("(prefers-color-scheme: dark)").matches);
+				document.documentElement.dataset.theme = dark ? "dark" : "light";
+			} catch {
+				document.documentElement.dataset.theme = "light";
+			}
+		</script>
+	</head>
+	<body>
+		<div id="root"></div>
+		<script type="module" src="/src/main.tsx"></script>
+	</body>
+</html>

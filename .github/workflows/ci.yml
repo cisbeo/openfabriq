@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Two jobs in parallel, the tests being the longest; `check` sums them up for main's protection.
+jobs:
+  static:
+    name: lint, types and builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      # Type checking the end-to-end tests reads the built packages.
+      - run: pnpm build
+      - run: pnpm typecheck
+      # The documentation site is otherwise only built when it is published.
+      - run: pnpm docs:build
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      # The sandbox of the engine's commands needs these on Linux, and bubblewrap needs
+      # unprivileged user namespaces, which Ubuntu 24.04 restricts with AppArmor.
+      # The runner's package lists are usually fresh enough: `apt-get update` only when they are not.
+      - run: |
+          packages="bubblewrap socat ripgrep"
+          sudo apt-get install -y $packages || { sudo apt-get update && sudo apt-get install -y $packages; }
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - run: pnpm install --frozen-lockfile
+      # Some tests run the built CLI.
+      - run: pnpm build
+      - run: pnpm test
+
+  check:
+    if: always()
+    needs: [static, test]
+    runs-on: ubuntu-latest
+    steps:
+      # Without this, a failed job would leave `check` skipped, which GitHub counts as passed.
+      - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1

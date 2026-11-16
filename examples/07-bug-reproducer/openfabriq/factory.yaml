@@ -1,0 +1,16 @@
+name: Bug reproduction factory
+description: A maintainer labels a bug report needs-repro. An agent follows its steps, proves the bug with a failing test or a browser session, and says on the issue exactly how to see it. It fixes nothing.
+repository: acme/web-app
+maintainers: [alice]
+model: sonnet
+
+setup: pnpm install --frozen-lockfile
+
+commands:
+  test: pnpm test
+  dev: pnpm dev
+
+limits:
+  usd_per_run: 3
+  usd_per_day: 20
+  minutes_per_run: 30

@@ -1,0 +1,11 @@
+{
+	"title": "Get started",
+	"pages": [
+		"what-is-openfabriq",
+		"concepts",
+		"why-openfabriq",
+		"install",
+		"quickstart",
+		"first-factory"
+	]
+}

@@ -1,0 +1,9 @@
+{
+	"packages": [
+		{ "name": "roots/wordpress", "version": "6.6.2" },
+		{ "name": "wpackagist-plugin/akismet", "version": "5.3.3" },
+		{ "name": "wpackagist-plugin/not-on-wpscan", "version": "1.0.0" },
+		{ "name": "wpackagist-theme/twentytwentyfour", "version": "1.2" },
+		{ "name": "vlucas/phpdotenv", "version": "5.6.1" }
+	]
+}

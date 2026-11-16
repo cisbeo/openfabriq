@@ -1,0 +1,166 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "Geist";
+      src: url("assets/fonts/geist.woff2") format("woff2");
+      font-weight: 100 900;
+    }
+    @font-face {
+      font-family: "Geist Mono";
+      src: url("assets/fonts/geist-mono.woff2") format("woff2");
+      font-weight: 100 900;
+    }
+    #root p {
+      margin: 0;
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+      font-family: "Geist", sans-serif;
+      color: var(--ink);
+    }
+    .card {
+      position: absolute;
+      left: 210px;
+      width: 1500px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding: 34px 48px;
+    }
+    .card h3 {
+      margin: 0 0 14px;
+      font-size: 32px;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+    }
+    .card h3 span {
+      font-weight: 400;
+      color: var(--muted);
+    }
+    #result-checks {
+      top: 170px;
+    }
+    .check {
+      display: flex;
+      align-items: center;
+      height: 66px;
+      border-top: 1px solid var(--line);
+      font-size: 32px;
+    }
+    .check svg {
+      width: 34px;
+      height: 34px;
+      margin-right: 22px;
+      flex: none;
+      color: var(--ok);
+    }
+    .check .who {
+      width: 200px;
+      color: var(--muted);
+    }
+    .check b {
+      width: 220px;
+      font-weight: 600;
+    }
+    .check code {
+      flex: 1;
+      font-family: "Geist Mono", monospace;
+      font-size: 30px;
+      color: var(--muted);
+    }
+    .check .s {
+      color: var(--muted);
+    }
+    #result-pr {
+      top: 560px;
+    }
+    #result-pr .line {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 36px;
+    }
+    .opened {
+      padding: 4px 18px;
+      border-radius: 999px;
+      background: var(--ok-soft);
+      color: var(--ok);
+      font-size: 28px;
+      font-weight: 600;
+    }
+    #result-pr .sub {
+      margin-top: 14px;
+      font-size: 30px;
+      color: var(--muted);
+    }
+    .labels {
+      margin-top: 18px;
+      display: flex;
+      gap: 14px;
+    }
+    .labels span {
+      padding: 4px 18px;
+      border-radius: 999px;
+      font-family: "Geist Mono", monospace;
+      font-size: 28px;
+      color: var(--ok);
+      background: var(--ok-soft);
+      border: 1px solid rgba(22, 128, 74, 0.3);
+    }
+    #result-caption {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 912px;
+      text-align: center;
+      font-size: 40px;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+    }
+  </style>
+  <div id="root" data-composition-id="result" data-width="1920" data-height="1080">
+    <div id="result-stage" class="clip" data-start="0" data-duration="3.5">
+      <!-- The run page's Checks and commands, and the pull request the engine opened, with its review's line and labels. -->
+      <div id="result-checks" class="card">
+        <h3>Checks and commands <span>run by the engine, without credentials</span></h3>
+        <p class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" role="img" aria-label="Passed"><circle cx="12" cy="12" r="9" /><path d="m8.5 12.5 2.5 2.5 4.5-5" /></svg><span class="who">Check</span><b>test</b><code>npm test</code><span class="s">6s</span></p>
+        <p class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" role="img" aria-label="Passed"><circle cx="12" cy="12" r="9" /><path d="m8.5 12.5 2.5 2.5 4.5-5" /></svg><span class="who">Check</span><b>typecheck</b><code>npm run typecheck</code><span class="s">4s</span></p>
+        <p class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" role="img" aria-label="Passed"><circle cx="12" cy="12" r="9" /><path d="m8.5 12.5 2.5 2.5 4.5-5" /></svg><span class="who">Check</span><b>lint</b><code>npm run lint</code><span class="s">1s</span></p>
+      </div>
+      <div id="result-pr" class="card">
+        <p class="line"><span class="opened">Opened</span><b>Pull request #45</b>Stream the export instead of loading every task</p>
+        <p class="sub">Reviewed before opening by reviewer: approved after 2 rounds, risk low.</p>
+        <p class="labels"><span>ready-to-merge</span><span>risk:low</span></p>
+      </div>
+      <p id="result-caption">Then the engine runs your checks, and opens the pull request.</p>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo(
+      "#result-checks",
+      { opacity: 0, y: 40, filter: "blur(8px)" },
+      { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.5, ease: "expo.out" },
+      0,
+    );
+    tl.fromTo(
+      "#result-caption",
+      { opacity: 0, filter: "blur(8px)" },
+      { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" },
+      0.2,
+    );
+    tl.fromTo("#result-checks .check", { opacity: 0 }, { opacity: 1, duration: 0.2, stagger: 0.25 }, 0.3);
+    tl.fromTo(
+      "#result-pr",
+      { opacity: 0, y: 40, filter: "blur(8px)" },
+      { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.5, ease: "expo.out" },
+      1.3,
+    );
+    tl.to("#result-checks, #result-caption", { opacity: 0, filter: "blur(8px)", duration: 0.2, ease: "power2.in" }, 2.9);
+    tl.to("#result-pr", { y: -400, duration: 0.5, ease: "power3.inOut" }, 3.0);
+    window.__timelines["result"] = tl;
+  </script>
+</template>

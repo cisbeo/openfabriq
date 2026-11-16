@@ -1,0 +1,95 @@
+---
+title: factory.yaml
+description: The repository, the people the factory trusts, its limits, its harness and the services it talks to.
+---
+
+`factory.yaml` holds the settings of the whole factory. Only `name`, `repository` and `maintainers` are required. This page is the key reference; the [harness](/factory/harness/) explains `setup`, `commands`, `checks`, `env`, `secrets` and `network` in detail.
+
+## Example
+
+```yaml title="openfabriq/factory.yaml"
+name: Task app factory
+description: From issue to review-ready pull request; a human merges.   # optional
+repository: acme/task-app
+maintainers: [alice, bob]       # only their actions start the factory
+model: sonnet                   # default model of the agents
+timezone: Europe/Paris          # optional: the time zone of schedules (the machine's by default)
+signature: false                # optional: leave out the line that says openfabriq wrote it
+answer_mentions: false          # optional: the engine no longer answers @openfabriq on its pull requests and issues
+
+limits:
+  usd_per_run: 5                # maximum cost of one run (API-equivalent)
+  usd_per_day: 30               # maximum per day, all automations together
+  minutes_per_run: 45
+  review_rounds: 3              # rounds of review before a person takes over
+
+setup: pnpm install --frozen-lockfile            # prepare each checkout before the agent (optional)
+commands:                       # optional: the project's commands, by name
+  test: pnpm test
+  lint: pnpm lint
+  size: scripts/bundle-size.sh 500   # runs openfabriq/scripts/bundle-size.sh, which must exist
+checks: [test, lint]            # optional: run by the engine before code leaves the machine
+
+env:                            # optional: values for setup, commands and agents; never a secret
+  NODE_ENV: test
+secrets: [DATABASE_URL]         # optional: names; values stay on the engine's machine
+network: [packages, api.stripe.com] # optional: the sites agents and commands reach; packages by default
+
+integrations:                   # optional: services the engine knows by name
+  slack: { channel: factory }
+  linear: { team: ENG }
+  sentry: { organization: acme, project: web-app }
+
+webhooks:                       # optional: webhooks the relay receives for the factory
+  deploy-failed: { signature: standard }
+
+mcp:                            # optional: MCP servers agents may use
+  sentry:
+    url: https://mcp.sentry.dev/mcp
+    secret: MCP_SENTRY_TOKEN
+
+wiki:                           # optional: the wiki the engine keeps; wiki: true for the defaults (off without the key)
+  folder: docs/wiki
+  refresh: after_merge          # or manual (the default)
+```
+
+## Keys
+
+| Key | Purpose | Default |
+| --- | --- | --- |
+| `name` | How the studio names the factory | Required |
+| `description` | How the studio describes the factory | |
+| `repository` | The GitHub repository the factory works on, as `owner/name` | Required |
+| `maintainers` | GitHub logins whose actions start automations, without `@`: `validate` refuses `@alice` | Required |
+| `model` | Default model of the agents: `sonnet`, `opus`, `haiku` or a full model id | `sonnet` |
+| `timezone` | IANA time zone for `schedule`, such as `Europe/Paris` or `UTC` | The machine's |
+| `signature` | `false` leaves out the [line that says openfabriq wrote](/integrations/github/#what-the-factory-writes) a comment, a review, an issue or a pull request | `true` |
+| `limits` | [Cost and time limits](#limits) | |
+| `setup` | One command, or a list, run in each checkout before the agent ([setup](/factory/harness/#setup)) | |
+| `commands`, `checks` | The project's [commands](/factory/harness/#commands), which can run a [script](/factory/harness/#scripts), and the [checks](/factory/harness/#checks) among them | |
+| `env`, `secrets` | [Environment variables and secrets](/factory/harness/#environment-variables-and-secrets) for commands | |
+| `network` | The [sites](/factory/harness/#network) agents and commands reach: `none`, `packages`, `any`, or a list of sites | `packages` |
+| `integrations` | [Slack](/integrations/slack/), [Linear](/integrations/linear/), [Sentry](/integrations/sentry/) | |
+| `webhooks` | [Webhooks](/integrations/webhooks/) received by the relay | |
+| `mcp` | [MCP servers](/integrations/mcp/) | |
+| `wiki` | The [wiki](/factory/wiki/): `true` turns it on, in `wiki/`, on demand; or set its `folder` and `refresh` (`manual` or `after_merge`); `false` or no key keeps it off | Off |
+| `answer_mentions` | `false` turns off the [answer to mentions](/factory/native-automations/#the-answer-to-mentions): the agent that opened a pull request or an issue no longer answers a maintainer's `@openfabriq` on it | `true` |
+
+## Limits
+
+| Limit | Effect | Default |
+| --- | --- | --- |
+| `usd_per_run` | A run stops when its API-equivalent cost reaches this amount | 5 |
+| `usd_per_day` | Once the day's runs reach this amount, further runs are skipped until the next day. A run stopped before Claude Code reports its cost (by `minutes_per_run` or an error) counts its whole `usd_per_run` | 30 |
+| `minutes_per_run` | A run stops after this duration, `setup` included | 45 |
+| `review_rounds` | After this many rounds of review, the engine hands the pull request to a person with `needs-human`: rounds of the [internal review](/factory/workflow/#the-internal-review) (`reviewed_by`), or review and rework rounds on GitHub | 3 |
+
+`plan` reports a raised limit as a security change.
+
+### How cost is counted
+
+With a subscription, nothing is billed per token: the cost shown is what the same tokens would cost on the API, a measure of how much of your quota a run uses. With an [API key](/deployment/docker/#claude-api-key-or-subscription), it estimates what you pay, at Anthropic's list prices.
+
+### GitHub's own limits
+
+GitHub limits how much an account writes: about 80 pull requests, comments, labels, reviews or merges a minute, and 500 an hour. The engine writes one thing at a time, a second apart, whatever the number of runs. When GitHub still refuses, it waits a minute, then two, then four, and tries again; after that, the run fails with "GitHub's rate limit". This waiting does not count in `minutes_per_run`, so a factory that writes a lot, such as a site migration, slows down instead of failing.

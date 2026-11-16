@@ -1,0 +1,57 @@
+---
+title: Concepts
+description: The terms you need to read and write a factory, and how work moves from one agent to the next.
+---
+
+A dozen words carry the whole documentation: files you write, processes that run, and things that happen on GitHub.
+
+## Glossary
+
+| Term | Meaning |
+| --- | --- |
+| **Factory** | The `openfabriq/` folder of a repository. It says who works, when, and what they may write. |
+| **Agent** | A job description in `agents/<name>/agent.md`: a role, an input, an output, a procedure, and the tools it may use on the machine. |
+| **Automation** | A rule in `automations/<name>/automation.md`. It says **when** an event happens, **which agent** runs, and what the engine **can** write for it. The rest of the file is the task. |
+| **Event** | What starts an automation, such as a label added to an issue, a pull request opened, a schedule, a Slack mention or a webhook. See [Events](/reference/events/). |
+| **Output** | What the engine writes on the agent's behalf, such as a comment, labels, a pull request, a review or an issue. See [Permissions](/reference/permissions/). |
+| **Run** | One execution of an automation: a checkout, an agent session, and the outputs the engine applied or refused. |
+| **Skill** | Know-how in a `SKILL.md` file that an agent loads when it needs it, such as how to write for your maintainers, testing standards or how to use a tool. |
+| **Harness** | The project's named commands (`commands`), those the engine runs before code leaves the machine (`checks`), and the preparation of each checkout (`setup`). |
+| **Engine** | The process started by `openfabriq start`. It watches events, queues runs, starts agents and applies their outputs. |
+| **Applied factory** | The copy made by `openfabriq apply`. Only this copy runs. |
+| **Relay** | A mailbox on the Internet that you deploy once, through which Slack, Linear, Sentry and webhooks reach the factory. It keeps their events until the engine collects them. Not needed for GitHub alone. See [Relay](/deployment/relay/). |
+| **Studio** | The local app served by the engine, to follow what the factory does. |
+
+## How work moves
+
+Stages hand work to each other **through GitHub**, as a team would. No agent calls the next one: an agent leaves a label, a pull request or a review, and that event starts the next automation.
+
+<Flow
+	steps={[
+		{ event: "Issue opened", start: true },
+		{ agent: "triage" },
+		"label ready-for-agent",
+		{ agent: "implementer" },
+		"its change",
+		{ agent: "reviewer" },
+		"approved: pull request",
+		{ event: "A person merges", you: true },
+	]}
+	caption={<>The reviewer reads the change before the pull request exists. The complete loop is on the <a href="/factory/workflow/">Workflow</a> page.</>}
+/>
+
+One rule keeps this loop under control: the labels, pull requests and reviews written by the engine **start** the next automations, but its comments **start nothing**. Otherwise, an agent that comments on an issue it listens to would restart itself.
+
+One loop stays on the machine: an automation with `reviewed_by` has its change read by a reviewer before it reaches GitHub, and sent back until it is approved. `review_rounds` in `factory.yaml` bounds review loops.
+
+The engine also puts [labels of its own](/integrations/github/#engine-labels):
+
+- `needs-human` when it stops a loop: the limit is reached, a run failed, or a rework pushed nothing;
+- `ready-to-merge` and the reviewer's risk (`risk:low`, `risk:medium`, `risk:high`) when an internal review approves;
+- `openfabriq:working` while a run works on an issue or a pull request. It starts nothing.
+
+## Who can start a run
+
+By default, only the actions of the `maintainers` in `factory.yaml` (GitHub logins) start the factory. `from: anyone` on an automation opens it to every GitHub user, and `plan` reports it as a security change. Schedules and pushes to the default branch have no author to check.
+
+Slack, Linear and Sentry have no GitHub login, so access is controlled by the place: the members of the Slack channel, the people who can label issues in the Linear team, and the errors that reach the Sentry project. A webhook is controlled by its signature.

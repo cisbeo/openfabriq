@@ -1,0 +1,12 @@
+name: Code review factory
+description: Every pull request gets an independent review with findings and a verdict. The factory never pushes; people fix and merge.
+repository: acme/web-app
+maintainers: [alice, bob]
+model: sonnet
+
+setup: pnpm install --frozen-lockfile
+
+limits:
+  usd_per_run: 4
+  usd_per_day: 25
+  minutes_per_run: 30

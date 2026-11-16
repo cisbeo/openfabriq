@@ -1,0 +1,8 @@
+name: Scripts
+repository: acme/app
+maintainers: [alice]
+setup: scripts/prepare.sh --quiet
+commands:
+  report: scripts/report.mjs > report.json
+  build: ./scripts/build.sh # a file of the repository, from the worktree
+checks: [report]

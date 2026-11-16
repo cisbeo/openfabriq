@@ -1,0 +1,55 @@
+name: Bug report
+description: Something in openfabriq does not work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. For a security problem, do not open an issue: see SECURITY.md.
+        Remove tokens, secrets and private repository names from what you paste.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: The commands you ran and, if it helps, the relevant files of your `openfabriq/` folder.
+      placeholder: |
+        1. openfabriq init --example 01-quickstart
+        2. openfabriq start
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: The terminal output, or the run's log from the studio.
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: openfabriq version
+      description: "`npm ls -g openfabriq`, `brew info openfabriq`, or the commit if you run it from the sources."
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where the engine runs
+      options:
+        - On my computer (openfabriq start)
+        - On a server
+        - In Docker
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating system, Node version (`node --version`), Claude Code version (`claude --version`).

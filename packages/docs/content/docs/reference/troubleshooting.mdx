@@ -1,0 +1,81 @@
+---
+title: Troubleshooting
+description: Find out what happened, and fix the usual problems.
+---
+
+Start with `openfabriq doctor` in your repository. It installs and runs nothing.
+
+## See what is happening
+
+| Where | What it shows |
+| --- | --- |
+| `openfabriq doctor` | What this machine lacks, the sites the factory calls that [`network`](/factory/harness/#network) does not reach, and the sites its last runs were refused |
+| The studio's [board](/studio/board/) | What waits, works, needs you, is done; the navigation counts the runs that need someone |
+| `openfabriq status` | The same, in a terminal |
+| GitHub | Every result: a comment, a label, a pull request |
+| `/openfabriq:diagnose` in Claude Code | Why something happened or not, and what to change, read from the runs and the applied factory. Needs the [plugin](/getting-started/install/#the-claude-code-plugin) |
+
+## Read a failed run
+
+Open the run in the [studio](/studio/runs/): **Summary** (what started it, what the agent reported), **Logs** (the conversation, with the commands and checks the engine ran), **Outputs** (each proposal, and why it was applied or refused), **Files changed** (each diff). Or ask the [chat](/studio/chat/) "Why did the last run fail?": it reads the runs and the factory. Then find the symptom below.
+
+## The factory does not load or start
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| *openfabriq needs a few things on this machine first* | Claude Code, the GitHub CLI or your git identity is missing or logged out (checked once, on the first `init`, `plan`, `apply`, `start` or `run`) | Run the commands it lists. After a later logout, the tool's own error shows: `claude auth login` or `gh auth login` |
+| *openfabriq init … needs an interactive terminal and the claude command* | Run from a script, or `claude` is not on your `PATH` | Use a terminal, or copy a template: `openfabriq init --example <name>` |
+| `start` says *no project yet* | No factory applied on this machine | `openfabriq apply` in your repository, or `openfabriq start` there, which applies first |
+| `apply` warns *You are on branch …* or *uncommitted changes* | You apply a factory that is not merged | Commit, push and merge `openfabriq/`, then apply from the default branch |
+| `start` says *the relay is not connected* | The factory listens to Slack, Linear, Sentry or a webhook | `openfabriq connect relay`, then restart `start` |
+| `start` says *… not set on this machine* | A secret (of `secrets` or an MCP server) has no value here | `openfabriq secret set <NAME>`; the next run uses it |
+| `start` says *127.0.0.1:4310 is taken* | Another program, most often another `openfabriq start`, uses the studio's port | Stop it (`Ctrl-C` in its terminal), or pass another `--port` |
+| `start` says *another "openfabriq start" (process …) runs the projects of …* | An engine already runs on this engine folder; two would break each other's runs | Stop it, or give this one its own folder with [`OPENFABRIQ_HOME`](/reference/environment/#the-data-folder) |
+| The studio says *Open the studio from the address that "openfabriq start" printed* | Each `start` draws a new token, locking out tabs opened before | Open the last address `start` printed, with `?token=` |
+| The studio says *The factory applied to … does not load*, then the file and its first error | An update changed the format (for example, `slack`, `linear` and `sentry` moved under `integrations`) | `openfabriq validate`, fix what it lists, `openfabriq apply` |
+
+## Runs
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Adding a label starts nothing | Added by someone outside [`maintainers`](/integrations/github/#who-can-start-a-run), factory not applied, or `start` not running | Check `maintainers`; `openfabriq plan` should report nothing to change; check the terminal of `start` |
+| An agent's comment started nothing | The engine's comments start nothing, so an agent cannot restart itself | Chain steps with a label |
+| A run is *skipped* | The daily limit ([`usd_per_day`](/factory/factory-yaml/#limits)) was reached, or the event matched nothing that could run | Read the reason in the run. It never comes back on its own: raise the limit or wait, then `openfabriq run` |
+| The pull request was refused, and the issue has `needs-human` | A check still failed at the end, or the agent changed `.github/workflows/` | Read **Checks and commands** in the run; fix the change by hand, or improve the agent's procedure |
+| An output was refused | The automation's [`can`](/reference/permissions/) does not allow it | Add it to `can` if it should |
+| Runs are billed to an API key, not the subscription | `ANTHROPIC_API_KEY` is set in the engine's environment, and wins | `start` says which credential it uses; unset the variable and restart |
+| Two pull requests for one issue | Two engines watch the repository | Run the factory on one machine only |
+| A nightly schedule ran in the morning | The machine slept; the [missed run was caught up once](/deployment/local/#schedules-and-sleep) | Wake it beforehand: `sudo pmset repeat wakeorpoweron MTWRFSU 01:55:00` |
+
+## Network
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| A command or check ends with *openfabriq: the network refused …*; `web` says *… is not in this agent's network*; the shell shows `deny network-outbound … (host is not on the allow list)` | The site is not in [`network`](/factory/harness/#network) | Add it to `network` in `factory.yaml`, or in `agent.md` for one agent whose job needs it; apply |
+| `curl` says `CONNECT tunnel failed, response 403`, or Node says `fetch failed` | The sandbox's proxy refused the site | `openfabriq doctor` lists the sites the last runs were refused |
+| `setup` fails while a tool downloads its own files, such as Playwright's browsers | `setup` reaches only the package registries and `network` | Install the tool on the machine, or add its site to `network` |
+| A listed site is refused: the shell says *resolved to a loopback address*, or a command or check ends with *openfabriq: the network refused …, a name that points to this machine, even listed: reach it as localhost.* | The name points to this machine (a DDEV site, say) | Use `localhost` and its port |
+
+## Sandbox and Linux
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `setup` fails in the run but works in my terminal | Engine commands run in a [sandbox](/factory/harness/#sandbox-of-the-engines-commands): no writes to git or the home folder, no secrets | Install into the project's folders; on Linux, install `ripgrep`, `bubblewrap` and `socat` |
+| `EROFS`, `EPERM` or `ENOENT` on `mkdir '~/.gradle'` (a folder of the home folder) | Sandboxes never write the home folder; only `~/.config` is redirected (`XDG_CONFIG_HOME`), and for engine commands `~/.cache`, to the project's cache | Point the tool's variable at a checkout folder in `env` (`GRADLE_USER_HOME`, `CARGO_HOME`…), or turn the feature off (`ASTRO_TELEMETRY_DISABLED`, `NEXT_TELEMETRY_DISABLED`) |
+| On Linux, every run with `shell` fails | The agent sandbox requires `bubblewrap` and `socat` | `sudo apt install bubblewrap socat` |
+| On Linux, a server or a browser the agent started is gone at its next command | Each shell command has its own sandbox, which stops what it started | Start, use and stop the app in one command, as the browser-evidence skill's script does |
+| Runs fail with a `bwrap` error in Docker | The sandbox cannot create its namespaces in the container | Keep the `security_opt` of `docker-compose.yml`; see [what the sandbox costs the container](/deployment/docker/#what-the-sandbox-costs-the-container) |
+
+## Slack, relay and webhooks
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Slack mentions get no answer | Bot not in the channel, `start` not restarted after `connect slack`, or relay not connected | `/invite @openfabriq`, restart `start`, [check the relay](/deployment/relay/#connect-services-through-it) |
+| A Linear label starts nothing | The openfabriq app does not send *Issues* webhooks, or the issue is another team's | Tick *Issues* in the Linear app's webhooks; check `integrations.linear.team` |
+| A new Sentry issue starts nothing | `connect sentry` ran before the relay existed, or the token cannot list issues | Rerun `openfabriq connect sentry`; `start` prints the relay's error for a failed search |
+| `connect relay` reports no `workers.dev` address | Your Cloudflare account has no subdomain yet | Open *Workers & Pages* in the dashboard once, then retry |
+| A webhook answers `401` | The relay does not know it (no `connect webhook`), or the sender's secret differs | Rerun `openfabriq connect webhook <name>`, update the sender |
+
+## Get help
+
+Still stuck? Open an issue on [GitHub](repo:issues).

@@ -1,0 +1,116 @@
+---
+title: Overview
+description: Ask Claude about your factory, in your own conversations. Nine tools that read it and change nothing.
+---
+
+Ask Claude why a run failed, what the factory cost this week, or what waits for you. openfabriq gives Claude Code, Claude Desktop and claude.ai nine tools that read your factory and change nothing.
+
+<Callout>
+This page is about Claude reading **your factory**. To give your agents tools **from** other services, such as Sentry, see [MCP servers](/integrations/mcp/).
+</Callout>
+
+## What you can ask
+
+| Ask, for example | What Claude reads | Tool |
+| --- | --- | --- |
+| *What does the factory do? Which agent can merge?* | The factory: agents, automations, what they may do, limits | `factory_overview` |
+| *Which runs failed today?* | The runs, latest first | `list_runs` |
+| *Why did the last run fail?* | One run: its prompt, what the agent did, its outputs | `read_run` |
+| *When does the nightly audit run next?* | The scheduled automations | `schedules` |
+| *What does the wiki say about the deploy?* | The project's wiki | `read_wiki` |
+| *Why does Slack not answer?* | Each integration: connected or not, and how to connect it | `connections` |
+| *Is this change to `openfabriq/` valid?* | What `validate` and `plan` would say, without writing anything | `check_factory_change` |
+| *How much did the factory cost this week, per agent?* | Runs, cost, pull requests, human interventions | `metrics` |
+| *Which issues are waiting for me?* | Where each issue or pull request stands | `board` |
+
+Their parameters are in [Tools](/mcp/tools/).
+
+## Connect Claude
+
+Pick where your engine runs.
+
+<Tabs items={["On your computer", "On a server"]}>
+<Tab value="On your computer">
+
+**Claude Code**: with the [openfabriq plugin](/getting-started/install/#the-claude-code-plugin), there is nothing to do. Without it:
+
+```bash
+claude mcp add --scope user openfabriq -- openfabriq mcp
+```
+
+**Claude Desktop**: Settings › Developer › Edit Config, add these lines, then restart Claude Desktop:
+
+```json title="claude_desktop_config.json"
+{
+  "mcpServers": {
+    "openfabriq": {
+      "command": "openfabriq",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+If it says the server failed to start, put the full path that `which openfabriq` prints in `command`.
+
+</Tab>
+<Tab value="On a server">
+
+Your studio needs a domain, and a password or [sign-in with GitHub](/deployment/docker/#sign-in-with-github): see [Open the studio](/deployment/docker/#open-the-studio). The address to give Claude is that domain followed by `/mcp`:
+
+```text
+https://factory.example.com/mcp
+```
+
+**Claude Desktop or claude.ai**: Settings › Connectors › *Add custom connector*. Give a name and this address. A page opens: type the studio's password, or sign in with GitHub, then *Allow*.
+
+**Claude Code**:
+
+```bash
+claude mcp add --transport http --scope user openfabriq https://factory.example.com/mcp
+```
+
+Then type `/mcp`, choose `openfabriq` and *Authenticate*: the same page opens.
+
+<Callout type="warn">
+Claude Desktop and claude.ai connect from Anthropic's servers, not from your computer. Your domain must let in [Anthropic's addresses](https://platform.claude.com/docs/en/api/ip-addresses) (`160.79.104.0/21`). Behind a VPN or Tailscale, only Claude Code works.
+</Callout>
+
+<Accordions>
+<Accordion title="No domain: over SSH, for Claude Code">
+
+Claude Code can start the tools in the engine's container over SSH. With the repository's `docker-compose.yml`, from the folder that holds it:
+
+```bash
+claude mcp add --scope user openfabriq -- ssh -o BatchMode=yes factory-server 'cd /srv/openfabriq && docker compose exec -T engine openfabriq mcp'
+```
+
+On Coolify, the container's name changes at each deploy: find it by the part that stays, which `docker ps` shows on the server.
+
+```bash
+claude mcp add --scope user openfabriq -- ssh -o BatchMode=yes factory-server 'docker exec -i $(docker ps -q -f name=engine-k8s0wc4 | head -1) openfabriq mcp'
+```
+
+- Use an SSH key: with `BatchMode=yes`, SSH stops instead of asking for a password nobody can type.
+- The SSH user must be allowed to run `docker` (the `docker` group, or `sudo -n`).
+- Restart Claude Code to load it.
+
+</Accordion>
+</Accordions>
+
+</Tab>
+</Tabs>
+
+## Good to know
+
+- **Read only.** No run started, nothing written to GitHub or to the factory. To change the factory, ask Claude for the change, merge it in a pull request, and run [`openfabriq apply`](/factory/plan-and-apply/). To start a run: [`openfabriq run`](/deployment/local/#everyday-commands).
+- **Several projects.** Claude reads every project of the engine. With more than one, it names the one it asks about (`owner/repo`).
+- **Always current.** Each question reads the factory as last applied, even when the engine is stopped.
+- **Signing out, on a server.** Claude stays connected for 30 days after its last question. To sign everyone out, change the studio's password (with GitHub, generate a new client secret), or delete `~/.openfabriq/mcp-grants.json` on the engine. With GitHub, someone removed from the repositories loses access within the hour.
+
+## Security
+
+- What the tools ask GitHub, Linear or Sentry is read-only too. `connections` says whether a service is connected, never its token.
+- Issues, pull requests and transcripts are written by others: openfabriq tells Claude they are data, never instructions.
+- Claude sees what the tools return, transcripts included: use it with code you would show it anyway.
+- On a server, only Claude and Claude Code can sign in, allowed by someone signed in with GitHub, or else with the studio's password. After 10 wrong passwords in 10 minutes from one address, that address waits 10 minutes.

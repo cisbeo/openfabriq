@@ -1,0 +1,44 @@
+---
+title: Roadmap
+description: The current version, what comes next, and the directions we are considering.
+---
+
+openfabriq is at **version 0.1.0**, its first public release.
+
+## In 0.1.0
+
+- **The format**: `factory.yaml`, agents, automations, skills and scripts in an `openfabriq/` folder; `validate`, `plan` with the security changes first, and `apply`.
+- **`openfabriq init`**: Claude Code writes the folder with you, or copies one of the [templates](/templates/).
+- **The engine** on your computer, or in [Docker](/deployment/docker/) on a server, with a Claude subscription or an Anthropic API key.
+- **Where work starts**: GitHub, and [Slack](/integrations/slack/), [Linear](/integrations/linear/), [Sentry](/integrations/sentry/) and [signed webhooks](/integrations/webhooks/) through a relay you deploy.
+- **The internal review**: [`reviewed_by`](/factory/automations/#reviewed-by) names an agent that reviews the change before the pull request exists, at most `review_rounds` times.
+- **The studio**: overview and costs, board, runs, agents, workflow, wiki and a chat that only reads.
+- **[Sign-in with GitHub](/deployment/docker/#sign-in-with-github)** to the studio and the connector on a server: whoever can write to the factory's repositories enters with their own GitHub account.
+- **[openfabriq as a connector of Claude](/mcp/overview/)**: read-only tools for Claude Code, Claude Desktop and claude.ai, served at `https://<domain>/mcp` by an engine on a server.
+- **[Your team's GitHub App](/deployment/docker/#the-github-app)** instead of a token, in trial: `openfabriq connect github` creates it, and the engine renews a token per repository by itself.
+- **The wiki**: a map of your code the engine keeps up to date, proposed as a pull request.
+- **Network rules**: agents and the engine's commands reach only the sites of [`network`](/factory/harness/#network), the package registries and GitHub by default.
+
+## Next
+
+Planned:
+
+- **[Codex](/factory/agents/#models)**: run the agents with OpenAI's Codex, so a team can use a ChatGPT plan.
+- **[Hooks](/factory/harness/#hooks)**: Claude Code's hooks, declared in the factory, to run one of its scripts at a given moment of an agent's work, such as formatting the code after each edit. They come from what you applied and show in `plan`.
+- **[Accounts outside GitHub](/deployment/docker/#sign-in-with-github)**: studio accounts, with an invitation list, for people who are not on GitHub. Everyone on your repositories already signs in with their own GitHub account.
+
+## Later
+
+Directions we are considering, in no particular order:
+
+- **More agent runtimes and models**: other command-line agents besides Claude Code and Codex, with their own models.
+- **GitLab**: factories for repositories hosted on GitLab, besides GitHub.
+- **Microsoft Teams**: start work and get the answers in Teams, as in Slack.
+- **Secrets bound to a site**: a real key that agents and commands never see. They get a stand-in, and the sandbox's proxy puts the real value into outgoing requests, to the sites you name only. Until then, `secrets` hold test values. See [Security](/reference/security/).
+- **Each agent in its own container**: a stronger wall than the sandbox, where an agent no longer sees the machine at all.
+- **OpenTelemetry export**: runs, durations and costs sent to your own observability tools. Nothing goes to openfabriq.
+- **Open benchmarks and evals**: reference factories, such as the site migrations, measured version after version (cost and time per ticket, work merged alone, review rounds, a person's interventions), and replayable cases for each kind of agent. You add your own runs if you choose, as a summary of numbers, never your code or prompts.
+
+## Have a say
+
+Need one of these, or something missing here? [Open an issue](repo:issues) with your use case: what teams ask for shapes this page.

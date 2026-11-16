@@ -1,0 +1,99 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "Geist";
+      src: url("assets/fonts/geist.woff2") format("woff2");
+      font-weight: 100 900;
+    }
+    @font-face {
+      font-family: "Geist Mono";
+      src: url("assets/fonts/geist-mono.woff2") format("woff2");
+      font-weight: 100 900;
+    }
+    #root p {
+      margin: 0;
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+      font-family: "Geist", sans-serif;
+      color: var(--ink);
+    }
+    /* The brand's own logo file, 293 × 52, at 2× : the mark is its first 52 px. */
+    #end-logo {
+      position: absolute;
+      left: 667px;
+      top: 330px;
+      width: 586px;
+      height: 104px;
+    }
+    #end-command {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 560px;
+      text-align: center;
+    }
+    #end-command span {
+      display: inline-block;
+      padding: 22px 40px;
+      border-radius: 18px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      font-family: "Geist Mono", monospace;
+      font-size: 40px;
+    }
+    #end-command em {
+      font-style: normal;
+      color: var(--muted);
+    }
+    #end-note {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 720px;
+      text-align: center;
+      font-size: 34px;
+      color: var(--muted);
+    }
+    /* ElevenLabs' free plan asks for "elevenlabs.io" wherever the film is published: here, and in its title. */
+    #end-credits {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 960px;
+      text-align: center;
+      font-size: 28px;
+      color: var(--muted);
+    }
+  </style>
+  <div id="root" data-composition-id="end" data-width="1920" data-height="1080">
+    <div id="end-stage" class="clip" data-start="0" data-duration="5">
+      <img id="end-logo" src="assets/brand/logo.svg" alt="openfabriq" />
+      <p id="end-command"><span><em>$ </em>brew install openfabriq/tap/openfabriq</span></p>
+      <p id="end-note">Open source, Apache-2.0. Your factory, your rules.</p>
+      <p id="end-credits">Voice by elevenlabs.io · Music: The Warm Minimal by Pumpupthemind (Pixabay)</p>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    // The mark lands, then the wordmark wipes in beside it.
+    tl.fromTo(
+      "#end-logo",
+      { opacity: 0, scale: 0.8, clipPath: "inset(0 82% 0 0)" },
+      { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.5)", transformOrigin: "9% 50%" },
+      0.3,
+    );
+    tl.to("#end-logo", { clipPath: "inset(0 0% 0 0)", duration: 0.6, ease: "power3.out" }, 0.9);
+    tl.fromTo(
+      "#end-command",
+      { opacity: 0, y: 20, filter: "blur(8px)" },
+      { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.45, ease: "expo.out" },
+      1.7,
+    );
+    tl.fromTo("#end-note", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 2.3);
+    tl.fromTo("#end-credits", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 2.6);
+    window.__timelines["end"] = tl;
+  </script>
+</template>

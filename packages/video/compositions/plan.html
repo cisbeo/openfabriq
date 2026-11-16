@@ -1,0 +1,259 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "Geist";
+      src: url("assets/fonts/geist.woff2") format("woff2");
+      font-weight: 100 900;
+    }
+    @font-face {
+      font-family: "Geist Mono";
+      src: url("assets/fonts/geist-mono.woff2") format("woff2");
+      font-weight: 100 900;
+    }
+    #root p {
+      margin: 0;
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+      font-family: "Geist", sans-serif;
+      color: var(--ink);
+    }
+    /* The define scene's last frame: the terminal rises over the folder it reads. */
+    #plan-before {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 1080px;
+    }
+    #plan-window {
+      position: absolute;
+      left: 96px;
+      top: 72px;
+      width: 1728px;
+      height: 800px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .bar {
+      position: relative;
+      height: 56px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      padding: 0 22px;
+      gap: 10px;
+      background: var(--sunken);
+    }
+    .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--line);
+    }
+    .bar-title {
+      position: absolute;
+      inset: 0;
+      line-height: 56px;
+      text-align: center;
+      font-size: 28px;
+      color: var(--muted);
+    }
+    #plan-screen {
+      height: 744px;
+      padding: 20px 36px;
+    }
+    /* Exactly 16 lines: the screen scrolls by whole lines, never cutting one. */
+    #plan-view {
+      position: relative;
+      height: 704px;
+      overflow: hidden;
+    }
+    /* Fixed 44 px lines: the scroll is exact, never measured. */
+    #plan-lines {
+      position: relative;
+      font-family: "Geist Mono", monospace;
+      font-size: 28px;
+      line-height: 44px;
+    }
+    #plan-lines p {
+      height: 44px;
+      white-space: pre;
+    }
+    #plan-security {
+      position: absolute;
+      left: -16px;
+      right: -16px;
+      top: 44px;
+      height: 352px;
+      border-radius: 10px;
+      background: var(--warn-soft);
+    }
+    .prompt {
+      color: var(--muted);
+    }
+    .typed {
+      display: inline-block;
+    }
+    #plan-apply-line,
+    #plan-confirm,
+    #plan-applied {
+      opacity: 0;
+    }
+    .head {
+      font-weight: 600;
+    }
+    .warn {
+      color: var(--warn);
+    }
+    .plus {
+      color: var(--ok);
+    }
+    .reviewed {
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .more {
+      color: var(--muted);
+    }
+    .ok {
+      color: var(--ok);
+      font-weight: 600;
+    }
+    #plan-caption {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 912px;
+      text-align: center;
+      font-size: 40px;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+    }
+  </style>
+  <div id="root" data-composition-id="plan" data-width="1920" data-height="1080">
+    <div id="plan-stage" class="clip" data-start="0" data-duration="8.5">
+      <img id="plan-before" src="assets/images/define-end.png" alt="The factory's folder, the scene before" />
+      <div id="plan-window">
+        <div class="bar">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="bar-title">Terminal — acme/web-app</span>
+        </div>
+        <div id="plan-screen">
+          <div id="plan-view">
+          <!-- What `openfabriq plan` prints for examples/00-at-a-glance, as on the landing page. -->
+          <div id="plan-lines">
+            <div id="plan-security"></div>
+            <p><span class="prompt">$ </span><span id="plan-cmd" class="typed">openfabriq plan</span></p>
+            <p class="out head warn">Security changes (read these first)</p>
+            <p class="out">  <span class="plus">+</span> setup runs on this machine before every agent: pnpm install --frozen-lockfile</p>
+            <p class="out">  <span class="plus">+</span> command test runs on this machine: pnpm test</p>
+            <p class="out">  <span class="plus">+</span> maintainer alice can now start automations</p>
+            <p class="out">  <span class="plus">+</span> agent implementer can now use edit</p>
+            <p class="out">  <span class="plus">+</span> agent implementer can now use shell</p>
+            <p class="out">  <span class="plus">+</span> automation implement-ready-issues can now create_pull_request</p>
+            <p class="out more">  … 20 more security changes</p>
+            <p class="out"></p>
+            <p class="out head">Agents</p>
+            <p class="out">  <span class="plus">+</span> implementer: Turns an issue or a production error into a pull request proven by the checks</p>
+            <p class="out">  <span class="plus">+</span> investigator: Finds why a deploy failed and writes it up as an issue, without fixing it</p>
+            <p class="out">  <span class="plus">+</span> reviewer: Reads the implementer's change before the pull request opens,</p>
+            <p class="out">    against what the issue asks</p>
+            <p class="out"></p>
+            <p class="out head">Automations</p>
+            <p class="out">  <span class="plus">+</span> implement-ready-issues: when issue.labeled (ready-for-agent) → implementer,</p>
+            <p class="out">    <span class="reviewed">reviewed by reviewer</span>, can create_pull_request, add_comment</p>
+            <p class="out more">  … 2 more automations</p>
+            <p class="out"></p>
+            <p class="out head">Labels to create on GitHub</p>
+            <p class="out">  <span class="plus">+</span> needs-human</p>
+            <p class="out">  <span class="plus">+</span> ready-for-agent</p>
+            <p class="out">  <span class="plus">+</span> ready-to-merge</p>
+            <p class="out">  <span class="plus">+</span> risk:low</p>
+            <p class="out more">  … 3 more labels</p>
+            <p class="out"></p>
+            <p class="out head">Plan: 6 to add, 0 to change, 0 to remove, 7 labels to create.</p>
+            <p class="out"></p>
+            <p id="plan-apply-line"><span class="prompt">$ </span><span id="plan-apply-cmd" class="typed">openfabriq apply</span></p>
+            <p id="plan-confirm">◆ Apply this plan to acme/web-app? <span id="plan-yes">› Yes</span></p>
+            <p id="plan-applied" class="ok">Applied. acme/web-app runs this factory as soon as "openfabriq start" is running.</p>
+          </div>
+          </div>
+        </div>
+      </div>
+      <p id="plan-caption">Before anything changes: the plan, new rights first.</p>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const LINE = 44;
+    const VISIBLE = 15; // the last line index that fits before the screen scrolls
+    const scrollTo = (index) => -Math.max(0, index - VISIBLE) * LINE;
+
+    // The folder steps back and a terminal rises in front of it: same repository, next step.
+    tl.fromTo(
+      "#plan-before",
+      { scale: 1, y: 0, opacity: 1, filter: "blur(0px)" },
+      { scale: 0.9, y: -40, opacity: 0.35, filter: "blur(5px)", duration: 0.7, ease: "power2.inOut" },
+      0.2,
+    );
+    tl.fromTo(
+      "#plan-window",
+      { y: 1040, opacity: 1 },
+      { y: 0, duration: 0.7, ease: "expo.out" },
+      0.45,
+    );
+    tl.to("#plan-before", { opacity: 0, duration: 0.3 }, 1.2);
+    tl.fromTo(
+      "#plan-caption",
+      { opacity: 0, filter: "blur(8px)" },
+      { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" },
+      1.0,
+    );
+    // Typing: the command uncovers one character at a time.
+    tl.fromTo(
+      "#plan-cmd",
+      { clipPath: "inset(0 100% 0 0)" },
+      { clipPath: "inset(0 0% 0 0)", duration: 0.45, ease: "steps(15)" },
+      1.3,
+    );
+    // The plan prints line by line; the screen scrolls once it is full.
+    const out = gsap.utils.toArray("#plan-lines .out");
+    out.forEach((line, i) => {
+      const at = 1.9 + i * 0.048;
+      tl.fromTo(line, { opacity: 0 }, { opacity: 1, duration: 0.05 }, at);
+      const index = i + 1;
+      if (index > VISIBLE) tl.to("#plan-lines", { y: scrollTo(index), duration: 0.08, ease: "none" }, at);
+    });
+
+    // Back to the top: new rights and tools come first.
+    tl.to("#plan-lines", { y: 0, duration: 0.5, ease: "power2.inOut" }, 3.4);
+    tl.fromTo(
+      "#plan-security",
+      { opacity: 0, scaleX: 0.4, transformOrigin: "left center" },
+      { opacity: 1, scaleX: 1, duration: 0.45, ease: "expo.out" },
+      3.75,
+    );
+
+    // Then apply.
+    tl.to("#plan-lines", { y: scrollTo(32), duration: 0.5, ease: "power2.inOut" }, 5.0);
+    tl.to("#plan-security", { opacity: 0, duration: 0.3 }, 5.0);
+    tl.to("#plan-apply-line", { opacity: 1, duration: 0.01 }, 5.45);
+    tl.fromTo(
+      "#plan-apply-cmd",
+      { clipPath: "inset(0 100% 0 0)" },
+      { clipPath: "inset(0 0% 0 0)", duration: 0.4, ease: "steps(16)" },
+      5.5,
+    );
+    tl.to("#plan-confirm", { opacity: 1, duration: 0.05 }, 6.0);
+    tl.fromTo("#plan-yes", { opacity: 0 }, { opacity: 1, duration: 0.05 }, 6.25);
+    tl.to("#plan-applied", { opacity: 1, duration: 0.05 }, 6.55);
+
+    tl.to("#plan-window, #plan-caption", { opacity: 0, filter: "blur(8px)", duration: 0.2, ease: "power2.in" }, 8.25);
+    window.__timelines["plan"] = tl;
+  </script>
+</template>

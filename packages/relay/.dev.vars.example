@@ -1,0 +1,3 @@
+# The secret Cloudflare's "Deploy to Cloudflare" page asks for. Draw it with `openssl rand -hex 32`,
+# keep it: `openfabriq connect relay --url <the relay's address>` asks for the same value.
+ENGINE_TOKEN=

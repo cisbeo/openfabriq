@@ -1,0 +1,4 @@
+name: Task app factory
+description: A factory ordered by area. Triage at the root, QA and security in their own folders.
+repository: acme/task-app
+maintainers: [ada]

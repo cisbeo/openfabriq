@@ -1,0 +1,20 @@
+name: Codebase Q&A factory
+description: Ask about the code in Slack; a read-only guide answers in the thread with file references, and files a GitHub issue when you ask it to.
+repository: acme/web-app
+maintainers: [alice]
+model: sonnet
+
+integrations:
+  slack:
+    channel: ask-the-code # where people ask, and where the guide answers
+
+# Answering a question is short work: keep the limits low.
+limits:
+  usd_per_run: 1
+  usd_per_day: 15
+  minutes_per_run: 10
+  review_rounds: 3
+
+# The guide starts from the wiki, the map of the code: keep it current after each merge.
+wiki:
+  refresh: after_merge

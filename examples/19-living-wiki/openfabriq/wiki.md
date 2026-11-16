@@ -1,0 +1,3 @@
+- Billing: how plans, invoices and refunds work, and where each rule lives in the code
+- Permissions: the roles, what each can do, and where the checks are made
+- Background jobs: what runs on a schedule, what each job touches, and how to run one by hand

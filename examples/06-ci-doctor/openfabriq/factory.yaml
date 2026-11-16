@@ -1,0 +1,19 @@
+name: CI doctor factory
+description: When the checks of a pull request fail, an agent finds the cause and comments the exact fix. A maintainer can ask another agent to push it.
+repository: acme/api-service
+maintainers: [alice]
+model: sonnet
+
+setup: pnpm install --frozen-lockfile
+
+commands:
+  test: pnpm test
+  lint: pnpm lint
+  typecheck: pnpm typecheck
+  build: pnpm build
+checks: [test, lint, typecheck]
+
+limits:
+  usd_per_run: 3
+  usd_per_day: 20
+  minutes_per_run: 30

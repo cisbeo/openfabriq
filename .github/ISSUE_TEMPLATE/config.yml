@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/openfabriq/openfabriq/security/advisories/new
+    about: Report it privately, never in a public issue.
+  - name: Documentation
+    url: https://github.com/openfabriq/openfabriq/tree/main/packages/docs/content/docs
+    about: How to build a factory, connect services and run it.

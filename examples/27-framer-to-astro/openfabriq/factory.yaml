@@ -1,0 +1,36 @@
+name: Framer to Astro migration
+description: Moves a Framer site to an Astro site in your own repository, page by page, and proves each page against the published Framer site. Framer exports no code, so the agents read the published pages and a CMS export a maintainer commits; humans settle the decisions, merge, and move the domain.
+repository: acme/example-astro
+maintainers: [alice]
+model: sonnet
+timezone: Europe/Paris
+
+setup: pnpm install --frozen-lockfile
+
+commands:
+  build: pnpm build
+  test: pnpm test
+  files: scripts/framer-files.sh # the files of Framer's CDN that migration/framer-cms/ points to, into framer-export/; no token
+  import: pnpm run import # migration/framer-cms/ and framer-export/ into the site's content; a script of the site, which the migration's first ticket (T01) writes as skills/astro-conventions says
+  parity: pnpm parity # compares the Framer and the Astro pages; a script of the site, which the migration's first ticket (T01) writes too
+checks: [build, test] # parity reads the published Framer site: agents run it themselves
+
+env:
+  ASTRO_TELEMETRY_DISABLED: "1" # Astro sends no usage data; the network would refuse it anyway
+  LEGACY_SITE_URL: https://example.framer.website # the published Framer site: its framer.website address, or the real domain if that one redirects there
+# No secret: Framer's API key can edit and publish the site, so the factory never holds one.
+
+network: # the sites agents and commands reach
+  - packages # the package registries, and GitHub
+  - example.framer.website # the published site of LEGACY_SITE_URL
+  - framerusercontent.com # the files the CMS points to, for the files script
+  # What a published Framer page loads, for the old site's screenshots: Google Fonts. Framer's editor bar
+  # (framer.com) and its analytics (events.framer.com) stay out: the pages render without them.
+  - fonts.gstatic.com
+
+limits:
+  usd_per_run: 8
+  usd_per_day: 40
+  minutes_per_run: 60
+  review_rounds: 3 # rounds of internal review before a person takes over
+answer_mentions: true # the agents that open pull requests answer a maintainer's @openfabriq in a comment on them; false turns it off

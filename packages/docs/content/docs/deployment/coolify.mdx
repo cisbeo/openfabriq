@@ -1,0 +1,113 @@
+---
+title: Coolify
+description: Run the engine on your own Coolify. One prompt sets it up through Coolify's API, or follow the steps by hand.
+---
+
+[Coolify](https://coolify.io) deploys the engine's `docker-compose.yml` straight from the repository: nothing to install on the server. It is the [Docker](/deployment/docker/) setup, with Coolify running `docker compose up`.
+
+## Deploy
+
+<Tabs items={["With Claude Code", "By hand"]}>
+<Tab value="With Claude Code" id="with-claude-code">
+
+Paste a prompt in Claude Code, on your computer: it sets the engine up through Coolify's API. Two steps come first.
+
+<Steps>
+<Step>
+
+### Turn the API on and make a token
+
+In Coolify:
+
+1. Open *Settings › Advanced* and switch on *API Access*.
+2. Go back to the main menu: *Settings* hides it. Under *Manage*, open *Keys & Tokens*.
+3. In *API tokens*, create a token with the abilities `read`, `write`, `deploy` and `read:sensitive` (the last one is for the logs), and not `root`.
+
+</Step>
+<Step>
+
+### Put the credentials in your terminal
+
+In the terminal window where you will start Claude Code:
+
+```bash
+export COOLIFY_URL=https://coolify.example.com   # your Coolify's address
+export COOLIFY_TOKEN=…   # the API token created at step 1
+export GITHUB_APP_ID=…  GITHUB_APP_PRIVATE_KEY=…   # your team's GitHub App, from `openfabriq connect github`
+# or, instead of the app, a classic token of the factory's GitHub account:
+# export GH_TOKEN=ghp_…
+export ANTHROPIC_API_KEY=…  # or CLAUDE_CODE_OAUTH_TOKEN, from `claude setup-token`
+claude
+```
+
+To create the app, see [The GitHub App](/deployment/docker/#the-github-app), and a token instead, [A token instead of the app](/deployment/docker/#a-token-instead-of-the-app). The variables are described under [Configuration](#configuration).
+
+The prompt tells Claude to use them by name and never to print them: they stay in this window and out of the conversation. Close the window afterwards, and delete the Coolify token once the deployment works.
+
+</Step>
+<Step>
+
+### Paste the prompt
+
+<CopyPrompt kind="coolify" />
+
+It checks the API, asks which repositories the engine runs and which server, project and environment to use, creates the application, adds its variables, deploys, and reports what [`openfabriq doctor`](/reference/troubleshooting/) says in the logs. It only touches what it creates.
+
+</Step>
+</Steps>
+
+</Tab>
+<Tab value="By hand" id="by-hand">
+
+<Steps>
+<Step>
+
+### Create the resource
+
+In your project, *New resource*, then the repository that holds the engine's sources. Take the branch `main`, the *Docker Compose* build pack, and `/docker-compose.yml` as its location:
+
+```text
+%GITHUB_URL%
+```
+
+If the repository is private, Coolify needs a GitHub App or a deploy key for it. An organization can forbid deploy keys (its *Settings › Deploy keys*): Coolify's clone then fails with `Repository not found`, until the organization enables them or Coolify uses a GitHub App instead.
+
+</Step>
+<Step>
+
+### Fill in the variables
+
+Coolify reads the compose file and lists its variables under *Environment Variables*. Fill in, at least:
+
+- `ANTHROPIC_API_KEY`, or `CLAUDE_CODE_OAUTH_TOKEN`;
+- `OPENFABRIQ_REPOSITORIES`;
+- for GitHub, the GitHub App's `GITHUB_APP_ID` and `GITHUB_APP_PRIVATE_KEY`, or, without an app, `GH_TOKEN`, `GIT_USER_NAME` and `GIT_USER_EMAIL`.
+
+The engine stops at its start, and says what is missing, without them. The others are optional: see [Configuration](#configuration).
+
+</Step>
+<Step>
+
+### Deploy
+
+Select *Deploy* and read the deployment logs. The engine prints what `openfabriq doctor` finds missing for each factory, and whether each repository's factory was applied.
+
+</Step>
+</Steps>
+
+</Tab>
+</Tabs>
+
+## Configuration
+
+The variables are Docker's, listed in [Docker's configuration](/deployment/docker/#configuration). In Coolify you set them under *Environment Variables*; the prompt sets them through the API.
+
+To open the studio on a domain, see [Open the studio](/deployment/docker/#open-the-studio): on Coolify, give the `engine` service the domain with the port, `https://factory.example.com:4311`. With that domain, Claude Desktop, claude.ai and Claude Code read the engine at `https://factory.example.com/mcp`: see [Connect Claude](/mcp/overview/#connect-claude).
+
+## What the compose file does not pass on
+
+A factory's [secrets](/factory/harness/#environment-variables-and-secrets), the ones its `factory.yaml` lists under `secrets`, are not variables of the compose file, so a variable added in Coolify does not reach the engine. Keep them in the engine's volume instead, from the application's terminal in Coolify:
+
+```bash
+openfabriq secret set FIGMA_TOKEN --project acme/web-app
+```

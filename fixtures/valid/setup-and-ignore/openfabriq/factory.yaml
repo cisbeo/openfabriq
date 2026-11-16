@@ -1,0 +1,6 @@
+name: Setup and ignored paths
+repository: acme/app
+maintainers: [alice]
+setup:
+  - pnpm install --frozen-lockfile
+  - pnpm build

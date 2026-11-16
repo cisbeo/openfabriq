@@ -1,0 +1,20 @@
+name: Tech debt sweeper factory
+description: One small, mechanical cleanup per pull request (dead code, a stale TODO, a deprecated call), on a chore issue, or every Wednesday on its own. The checks must pass, and a human merges.
+repository: acme/web-app
+maintainers: [alice]
+model: sonnet
+timezone: Europe/Paris # the weekly run's clock
+
+setup: pnpm install --frozen-lockfile
+
+commands:
+  test: pnpm test
+  lint: pnpm lint
+  typecheck: pnpm typecheck
+checks: [test, lint, typecheck]
+
+limits:
+  usd_per_run: 3
+  usd_per_day: 10
+  minutes_per_run: 30
+answer_mentions: true # the agents that open pull requests answer a maintainer's @openfabriq in a comment on them; false turns it off

@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+# The release step writes; it reads CI's verdict on the tagged commit.
+permissions:
+  contents: write
+  checks: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # A tag on a commit CI did not pass publishes nothing.
+      - name: CI passed on this commit
+        run: |
+          conclusion="$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?check_name=check" --jq '.check_runs[0].conclusion')"
+          test "$conclusion" = success
+        env:
+          GH_TOKEN: ${{ github.token }}
+      # Actions pinned by commit, and no token left on disk: the build runs every dependency's code,
+      # and only the last step needs the token, which it gets in its env.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm package
+      # The tag must name the version in the CLI's package.json, and the changelog must have its section.
+      - name: Release notes
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          test "$version" = "$(node -p 'require("./packages/cli/package.json").version')"
+          awk -v h="## [$version]" 'index($0, h) == 1 {on = 1; next} on && /^## \[/ {exit} on' CHANGELOG.md > notes.md
+          test -s notes.md
+      - name: GitHub release
+        run: gh release create "$GITHUB_REF_NAME" "packages/cli/release/openfabriq-${GITHUB_REF_NAME#v}.tgz" --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag
+        env:
+          GH_TOKEN: ${{ github.token }}

@@ -1,0 +1,4 @@
+name: Broken factory
+repository: not-a-repo
+maintainer: [alice]
+board: [coder, reviewer]

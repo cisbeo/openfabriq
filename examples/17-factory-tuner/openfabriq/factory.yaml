@@ -1,0 +1,19 @@
+name: Factory tuner
+description: Once a week, a tuner reads what people did with the factory's pull requests (merged, closed, sent back, handed to a human) and proposes one small change to an agent's brief or a skill, with the evidence. A human merges it; the engine never merges a change to the factory on its own.
+repository: acme/api-service
+maintainers: [alice]
+model: sonnet
+timezone: Europe/Paris # the weekly run's clock
+
+commands:
+  history: scripts/factory-history.mjs acme/api-service 28 # the last 28 days on GitHub, written to factory-history.md
+  validate: openfabriq validate # the factory still loads, with the change
+checks: [validate]
+
+secrets: [FACTORY_HISTORY_TOKEN] # read by the history script: a fine-grained token on this repository only, Pull requests and Issues read-only
+
+limits:
+  usd_per_run: 5
+  usd_per_day: 20
+  minutes_per_run: 45
+answer_mentions: true # the agents that open pull requests answer a maintainer's @openfabriq in a comment on them; false turns it off

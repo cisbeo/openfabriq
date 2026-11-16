@@ -1,0 +1,29 @@
+name: Web app factory
+description: Agents that keep the web app moving, from issue to pull request. A person reviews and merges every change.
+repository: acme/web-app
+maintainers: [alice] # only their actions start the factory
+model: sonnet # the default model of the agents
+
+setup: pnpm install --frozen-lockfile # prepare each run's checkout
+commands: # the project's commands, by name
+  test: pnpm test
+  lint: pnpm lint
+checks: [test, lint] # run by the engine before any pull request leaves the machine
+
+integrations:
+  sentry: # new production errors of this project are fixed
+    organization: acme
+    project: web-app
+
+webhooks:
+  deploy-failed: # the deploy platform posts here, through the relay
+    signature: standard
+
+mcp:
+  docs: # up-to-date documentation of the libraries the code uses
+    url: https://mcp.context7.com/mcp
+
+limits:
+  usd_per_run: 5
+  usd_per_day: 30
+answer_mentions: true # the agents that open pull requests answer a maintainer's @openfabriq in a comment on them; false turns it off

@@ -1,0 +1,114 @@
+---
+title: Skills
+description: Know-how in Markdown that agents load when they need it, including how to use a command-line tool.
+---
+
+A skill is a folder with a `SKILL.md` file, in the format of Claude Code's skills. It holds know-how that several tasks share, such as how to write for your maintainers, or how to check a change in a browser.
+
+```markdown title="openfabriq/skills/writing-for-maintainers/SKILL.md"
+---
+name: writing-for-maintainers
+description: How to write an issue, a comment or a pull request description that a maintainer can act on in one read. Use before proposing anything that people will read on GitHub.
+---
+
+# Writing for maintainers
+
+- First line: what happened, or what changed. No preamble.
+- Then the evidence: the failing run, the log line, the commit. Link it rather than paste it.
+- Then the next step, and who takes it.
+- When something is missing, ask one precise question, not a list.
+```
+
+What holds for any work on the code, such as the stack, the commands and the commit style, is not a skill: it goes in your repository's `CLAUDE.md`, the [project instructions](/factory/harness/#project-instructions) every agent reads first.
+
+## Where skills live
+
+| Location | Read by |
+| --- | --- |
+| `openfabriq/skills/<name>/SKILL.md` | Every agent of the factory |
+| `openfabriq/<area>/skills/<name>/SKILL.md` | The agents of that [area](/factory/overview/#a-large-factory-folders-by-area) |
+| `openfabriq/agents/<agent>/skills/<name>/SKILL.md` | That agent only; `openfabriq/<area>/agents/<agent>/skills/` for an agent of an area |
+
+## How agents use them
+
+`name` must match the folder's name. The `description` says **when** to use the skill: the agent sees every description first, and opens a skill when it matches the current work.
+
+Keep skills short and prescriptive. What varies from one automation to another goes in that automation's task.
+
+The engine loads only the factory's skills and the repository's project settings, never those of the machine (`~/.claude/`).
+
+## Skills for command-line tools
+
+A skill is the place to teach an agent a command-line tool: when to use it, which commands to run, what to do with the result. It only describes the tool: openfabriq installs nothing, so the tool must already be where the agent runs ([how to provide one](/factory/agents/#command-line-tools)).
+
+A skill for a tool usually states:
+
+- **when** to use the tool, in its `description`, so the agent opens the skill at the right moment;
+- **how to check** that the tool is available, and where its help is, for example `<tool> --help`;
+- **the commands** for each step, in order: by their name in `commands` when the factory declares them, otherwise as command lines;
+- **where to write** what the tool produces (the checkout or the temporary folder), and what goes into the pull request or the comment.
+
+Name the command in `factory.yaml`, and let the skill say when and why to run it. The command line is written once, the engine runs it in its sandbox, and an agent with `tools: [commands]` runs it without a shell ([the project's commands](/factory/harness/#commands)):
+
+```yaml title="openfabriq/factory.yaml (extract)"
+setup: pnpm install --frozen-lockfile
+commands:
+  api-lint: pnpm exec redocly lint openapi.yaml
+```
+
+```markdown title="openfabriq/skills/api-schema/SKILL.md"
+---
+name: api-schema
+description: How to check the OpenAPI schema with Redocly. Use when a change touches openapi.yaml or an API route.
+---
+
+# API schema
+
+Redocly is a dependency of this project, installed by setup.
+
+1. Run the `api-lint` command.
+2. Fix every error it reports. Warnings can stay, but list them in the pull request.
+3. Never edit the generated files in `src/api/generated/`.
+```
+
+To make the engine refuse a pull request whose schema fails, also add `api-lint` to `checks`.
+
+### Example: browser evidence
+
+Several templates share a `browser-evidence` skill. It teaches agents to check a visible change in a real browser with [agent-browser](https://github.com/vercel-labs/agent-browser), and to attach screenshots as proof:
+
+- the agent that **delivers code** starts the app, follows the issue's scenario, and takes one screenshot per visible acceptance criterion. It commits them in `evidence/<issue>/` and shows each one in the pull request description, linked by commit;
+- the **reviewer**, which cannot push, follows the same scenario in its own browser and states, criterion by criterion, whether the browser matches the screenshots. A visible criterion without a screenshot is a finding.
+
+The skill's `compatibility` field, part of the [Agent Skills standard](https://agentskills.io/specification), says what it needs: agent-browser and Playwright's headless Chrome, on the engine's machine. `openfabriq doctor` prints it, so you never copy the command from a README, and checks that the programs it installs (`npm install -g agent-browser`, `brew install`, `pipx install`) are there:
+
+```bash
+openfabriq doctor
+# ✗ agent-browser is not installed: skills/browser-evidence runs it
+# ! skills/browser-evidence: Needs agent-browser and Playwright's headless Chrome on the engine's machine:
+#   npm install -g agent-browser && npx playwright install chromium-headless-shell. On Linux, …
+```
+
+Run the command it prints once, then tell agent-browser where the headless Chrome is, in its own settings, `~/.agent-browser/config.json`. On macOS:
+
+```bash
+mkdir -p ~/.agent-browser
+cat > ~/.agent-browser/config.json <<END
+{
+  "executablePath": "$(ls -d ~/Library/Caches/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-mac-*/chrome-headless-shell | tail -1)",
+  "args": "--single-process"
+}
+END
+```
+
+On Linux, add `--with-deps` to the install command, and point `executablePath` to `~/.cache/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-linux*/chrome-headless-shell`, without `args`. The engine's [Docker image](/deployment/docker/) has all of it. `doctor` then says the skill is ready: `✓ skills/browser-evidence: agent-browser is installed`.
+
+Copy `examples/02-sdlc/openfabriq/skills/browser-evidence/` into your factory, with its `scripts/` folder, adapt the command that starts your app, and add one line to the procedures of your implementer and reviewer.
+
+<Callout type="warn">
+The agent drives the browser through the skill's script, `scripts/browse.sh`, one call per check: it starts the app, waits until it answers, runs the agent-browser steps, then closes the browser and stops the app. This is needed on **Linux**, the engine in Docker included: each command of the agent has its own sandbox, which stops what the command started when it ends, so a browser or an app started by one command is gone at the next. The script also keeps agent-browser's socket in the temporary folder, the only place besides the checkout where the agent writes. Opening, reading, clicking, filling and screenshots work on macOS and Linux, measured on real runs. If the browser does not start, the agent reports that the check could not run, and never presents a criterion as checked.
+</Callout>
+
+<Callout type="info">
+Screenshots committed in `evidence/` stay in your git history. Remove the folder before merging if you do not want to keep them.
+</Callout>

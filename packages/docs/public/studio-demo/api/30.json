@@ -1,0 +1,1 @@
+{"text":"# Accounts\n\nPeople sign in with an e-mail link or their company's SSO. A new account starts a 14-day trial.\n\n- [src/account/sso.ts](../../src/account/sso.ts): SAML sign-in\n- [src/components/TrialBadge.tsx](../../src/components/TrialBadge.tsx): the days left, in the header\n\n## Sources\n\nsrc/account/sso.ts\nsrc/account/plan.ts\nsrc/components/TrialBadge.tsx\n"}

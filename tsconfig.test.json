@@ -1,0 +1,19 @@
+{
+	"extends": "./tsconfig.base.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"declaration": false,
+		"composite": false,
+		"jsx": "react-jsx",
+		"allowImportingTsExtensions": true
+	},
+	"include": [
+		"packages/*/test",
+		"packages/*/src",
+		"packages/*/scripts",
+		"packages/runner/spike",
+		"vitest.config.ts",
+		"e2e"
+	],
+	"exclude": ["packages/relay"]
+}

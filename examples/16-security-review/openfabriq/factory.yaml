@@ -1,0 +1,16 @@
+name: Security review factory
+description: Every Monday, a mapper picks the riskiest surfaces, a hunter per surface looks for flaws, and a verifier on a stronger model tries to disprove each one. Only what survives becomes an issue. It changes nothing; a human decides.
+repository: acme/api-service
+maintainers: [alice]
+model: sonnet
+timezone: Europe/Paris # the weekly run's clock
+
+setup: pnpm install --frozen-lockfile
+
+commands:
+  audit: pnpm audit --prod --json > audit-report.json # fails when it finds advisories; the report is in the file either way
+
+limits:
+  usd_per_run: 5
+  usd_per_day: 30 # one mapper, up to 5 hunters, up to 5 verifiers a week
+  minutes_per_run: 45

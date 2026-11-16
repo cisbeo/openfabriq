@@ -1,0 +1,72 @@
+---
+title: What is openfabriq
+description: A software factory described in readable files, run by an engine on your computer or your own server.
+---
+
+openfabriq runs a **software factory**: a small team of AI agents that triage issues, implement them, review pull requests, investigate errors or keep documentation up to date. Each agent works at a moment you choose.
+
+You describe the factory in an `openfabriq/` folder of your repository, in files that a non-developer can read. The engine reads that folder, watches GitHub, starts the right agent with your Claude Code subscription or an Anthropic API key, and writes back to GitHub only what you allowed.
+
+The model is the one of Terraform. You describe the factory, `openfabriq plan` shows what will change, and `openfabriq apply` applies it.
+
+<ProductVideo className="my-8" />
+
+## How it fits together
+
+Your repository holds the description of the factory, and one machine runs it.
+
+<Places
+	steps={[
+		{
+			icon: "folder",
+			where: "In your repository",
+			title: "The factory",
+			items: [
+				"The openfabriq/ folder: agents, automations, skills",
+				"Versioned and reviewed like the rest of your code",
+			],
+		},
+		"openfabriq apply",
+		{
+			icon: "laptop",
+			where: "Your computer or a server",
+			title: "The engine",
+			accent: true,
+			items: [
+				"Started with openfabriq start",
+				"Runs the agents with your Claude Code",
+				"Serves the studio, a local app to follow every run",
+			],
+		},
+		"watches events, writes what you allowed",
+		{
+			icon: "github",
+			where: "Online",
+			title: "GitHub and your tools",
+			items: [
+				"Issues, pull requests and reviews",
+				"Slack, Linear and Sentry, if you connect them",
+			],
+		},
+	]}
+/>
+
+The engine is the same program on your computer and on a server: start locally, and move to a [server](/deployment/overview/) when your team needs it to run at all hours.
+
+## A factory is a folder
+
+A complete one, file by file:
+
+<FactoryExplorer />
+
+A maintainer adds the `ready-for-agent` label to an issue. Within a minute, the implementer starts in a fresh checkout. A few minutes later, a pull request is open, and it has passed the `checks` declared in `factory.yaml`. A new production error in Sentry follows the same path on its own, and a failed deploy becomes an investigated issue. A person merges.
+
+## Principles
+
+- **Agents read, the engine writes.** An agent has no GitHub credentials. It *proposes* outputs, and the engine applies only those that `can` allows. A person merges.
+- **What runs is what was applied.** The engine runs the copy made by `apply`, never your branch: a pull request cannot change the rules that judge it.
+- **Readable by anyone.** Triggers (`when`) and rights (`can`) are words from a closed list, checked by `openfabriq validate`.
+- **A run never waits for a person.** It ends. People act on GitHub with a label, a comment or a merge, and that starts the next run.
+- **Nothing is exposed.** The engine uses your Claude Code subscription (or an API key on a server) and your `gh` login, and opens no port to the Internet.
+
+[Why openfabriq](/getting-started/why-openfabriq/) explains each choice, and [Concepts](/getting-started/concepts/) defines each term. To try it, [install openfabriq](/getting-started/install/), then follow the [Quickstart](/getting-started/quickstart/).

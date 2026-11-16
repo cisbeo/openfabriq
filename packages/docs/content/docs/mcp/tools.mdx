@@ -1,0 +1,63 @@
+---
+title: Tools
+description: The nine read-only tools of openfabriq mcp, and what each one returns.
+---
+
+`openfabriq mcp` has nine read-only tools, the same as the studio's [chat](/studio/chat/). Each also takes `project`, the repository as `owner/repo`, which can be left out when the machine has a single project (see [Good to know](/mcp/overview/#good-to-know)).
+
+In Claude Code, with the plugin, their names start with `mcp__plugin_openfabriq_openfabriq__`, for example `mcp__plugin_openfabriq_openfabriq__list_runs`.
+
+| Tool | What it returns | Parameters |
+| --- | --- | --- |
+| `factory_overview` | The applied factory: its agents, its automations (when they start, what they can do), its limits | |
+| `list_runs` | The runs, latest first | `agent`, `status`, `source`, `subject`, `since`, `limit` |
+| `read_run` | One run: its record, its prompt, what the agent did | `id` |
+| `schedules` | The scheduled automations | |
+| `read_wiki` | The project's wiki | `page`, `search` |
+| `connections` | Whether each integration is connected | |
+| `check_factory_change` | What `validate` and `plan` would say about a change | `files` |
+| `metrics` | The studio overview's numbers | `period` |
+| `board` | Where each subject stands | |
+
+## factory_overview
+
+The factory as the engine runs it: the applied copy, not the files of your current branch. The instructions of agents and automations are left out, as they are long; the client can ask for a file when it needs one.
+
+## list_runs
+
+| Parameter | Value |
+| --- | --- |
+| `agent` | An agent's name |
+| `status` | `queued`, `running`, `succeeded`, `failed` or `skipped` |
+| `source` | Where the run came from: `github`, `slack`, `linear`, `sentry` or `webhook` |
+| `subject` | What the run was about: `#12`, `ENG-123`, `#factory` |
+| `since` | Runs queued at or after this ISO date or time: `2026-11-01` |
+| `limit` | 1 to 200, 20 by default |
+
+## read_run
+
+The run's record (status, reason, cost, outputs proposed and their fate), the prompt the agent received, and a condensed account of what it did: its messages and tool calls. A run interrupted by a stop says which run took it up again.
+
+## schedules
+
+For each automation with a `cron`: the schedule in words, the factory's time zone, the next run and the latest one with its status. A time missed while the machine slept runs once when it wakes.
+
+## read_wiki
+
+The project's [wiki](/factory/wiki/). Without parameters, its folder and its pages; with `page` (like `areas/payments.md`), that page; with `search`, the lines that contain these words. It says so when the wiki is off or not generated yet.
+
+## connections
+
+For Slack, Linear, Sentry, the relay and each webhook the factory uses: connected or not on this machine, and if not, the command that connects it (`openfabriq connect slack`). It also lists the integrations the factory does not use. It answers yes or no, **never a secret**.
+
+## check_factory_change
+
+Give it each file of `openfabriq/` that the change adds or modifies, with its full content (`agents/reviewer/agent.md`), and `null` for a file it deletes. It merges them with the applied factory in memory, then returns what `openfabriq validate` says and, when the result is valid, what `openfabriq apply` would change, security changes first. It writes nothing and asks GitHub nothing: the labels it announces are those the applied factory does not use yet.
+
+## metrics
+
+The numbers of the studio's [overview](/studio/overview/). `period` is `7d` (the default), `30d` or `all`. It returns runs by status, cost by agent and by day (the chat included), pull requests opened and merged, human interventions (handoffs, failed runs, refused outputs), the runs done without anyone stepping in, what the failed runs cost, the applied outputs by kind, and the gains GitHub tells: the factory's pull requests merged as written, and the median time from issue to merge against the team's.
+
+## board
+
+Each subject (issue, pull request or conversation) in its stage: `waiting`, `working`, `needs-you` (failed, handed to a human, or stopped at a cost limit) or `done`, with the agents that touched it in order. Then what each agent is doing now.

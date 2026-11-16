@@ -1,0 +1,10 @@
+name: Bad scripts
+repository: acme/app
+maintainers: [alice]
+setup:
+  - scripts/missing.sh
+  - scripts/../escape.sh
+commands:
+  bare: scripts/bare.sh
+  tested: scripts/test/report.test.mjs
+  python: scripts/tool.py

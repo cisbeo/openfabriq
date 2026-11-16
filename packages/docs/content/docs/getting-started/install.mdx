@@ -1,0 +1,132 @@
+---
+title: Install
+description: Install the openfabriq command and log in to Claude Code and GitHub, on the machine that runs the engine.
+---
+
+You install openfabriq once, **on the machine that runs the engine**: your computer to start with, a [server](/deployment/overview/) later. Your repository only receives the `openfabriq/` folder.
+
+<Places
+	steps={[
+		{
+			icon: "folder",
+			where: "In your repository",
+			title: "openfabriq/",
+			items: ["Your factory, in readable files", "Versioned with your code"],
+		},
+		"openfabriq apply",
+		{
+			icon: "laptop",
+			where: "Your computer or a server",
+			title: "The engine",
+			accent: true,
+			items: [
+				"What this page installs",
+				"Runs the agents with your Claude Code",
+				"Talks to GitHub with your gh login",
+			],
+		},
+	]}
+/>
+
+## With Claude Code
+
+Paste this prompt in Claude Code. It does the steps below, and stops when only you can do the next one, such as a login.
+
+<CopyPrompt kind="machine" />
+
+## By hand
+
+<Steps>
+<Step>
+
+### Install the command
+
+On macOS or Linux. Windows is not supported: the sandbox of the engine's commands does not run there. [Homebrew](https://brew.sh) also installs Node and the GitHub CLI:
+
+```bash
+brew install %GITHUB_OWNER%/tap/openfabriq
+```
+
+Or with npm, and [Node.js](https://nodejs.org) 24 or later (on Linux with a system Node, add `sudo`):
+
+```bash
+npm install -g openfabriq
+```
+
+</Step>
+<Step>
+
+### Log in
+
+Agents run with your [Claude Code](https://claude.com/claude-code), and the engine talks to GitHub with the [GitHub CLI](https://cli.github.com): no token to create. Install Claude Code if needed (with Homebrew: `brew install --cask claude-code`), then log in to both:
+
+```bash
+npm install -g @anthropic-ai/claude-code
+claude auth login && gh auth login
+```
+
+Commits are made under your git identity: `git config user.name` and `git config user.email` must be set.
+
+On Linux, also install the sandbox of the agents' shell and the engine's commands, for example `sudo apt install bubblewrap socat ripgrep`: without it, the engine's commands fail during a run.
+
+</Step>
+<Step>
+
+### Check
+
+In your repository:
+
+```bash
+openfabriq doctor
+```
+
+It checks all of the above and says how to fix what is missing. Once the factory exists, it also checks every program the factory starts (`composer` for its `setup`, for example) and prints what each skill says it needs, such as a browser. It installs nothing.
+
+</Step>
+</Steps>
+
+Next: the [Quickstart](/getting-started/quickstart/).
+
+<Accordions>
+<Accordion title="Without installing anything: npx">
+
+To write your factory before you install openfabriq, run this in your repository, with Node 24 or later:
+
+```bash
+npx openfabriq@latest init
+```
+
+It writes `openfabriq/` with Claude Code, and runs nothing. To run the factory, install openfabriq as above: the engine is a long-running process, and the [Claude Code plugin](#the-claude-code-plugin) calls `openfabriq` on your PATH.
+
+</Accordion>
+<Accordion title="From the sources">
+
+To try an unreleased version, or to work on openfabriq itself (requires pnpm):
+
+```bash
+git clone %GITHUB_URL%.git
+cd openfabriq && pnpm install && pnpm build && cd packages/cli && npm link
+```
+
+`npm link` puts `openfabriq` on your `PATH`.
+
+</Accordion>
+</Accordions>
+
+To update or uninstall openfabriq, and where it keeps its files: [Local](/deployment/local/#update-openfabriq). Which models agents run on, with which Claude credential: [Models](/factory/agents/#models).
+
+## The Claude Code plugin
+
+`openfabriq init` opens Claude Code with openfabriq's plugin for that conversation. To have it in every conversation, install it once (optional):
+
+```bash
+claude plugin install openfabriq --marketplace %GITHUB_URL%
+```
+
+It brings:
+
+- `/openfabriq:setup`, which writes or changes `openfabriq/` as `init` does;
+- `/openfabriq:diagnose`, which explains why an automation did not start or a run failed;
+- the read-only [MCP server](/mcp/overview/).
+
+Claude Code also uses them on its own when you ask, for example "why did nothing happen on issue 12?".

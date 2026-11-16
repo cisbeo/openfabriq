@@ -1,0 +1,25 @@
+name: Dependency updates factory
+description: Every Monday morning, an agent bumps the safe minor and patch versions, runs the checks, and opens one pull request that explains each bump. Majors are listed for a human.
+repository: acme/web-app
+maintainers: [alice]
+model: sonnet
+timezone: Europe/Paris
+
+setup: pnpm install --frozen-lockfile
+
+commands:
+  outdated: pnpm outdated --long
+  install: pnpm install --no-frozen-lockfile
+  test: pnpm test
+  lint: pnpm lint
+  typecheck: pnpm typecheck
+  build: pnpm build
+checks: [test, lint, typecheck, build]
+
+network: [packages, www.npmjs.com] # the package registries and GitHub, where release notes mostly are, and npm's pages
+
+limits:
+  usd_per_run: 4
+  usd_per_day: 10
+  minutes_per_run: 45
+answer_mentions: true # the agents that open pull requests answer a maintainer's @openfabriq in a comment on them; false turns it off

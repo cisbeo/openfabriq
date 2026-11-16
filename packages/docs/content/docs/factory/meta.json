@@ -1,0 +1,15 @@
+{
+	"title": "Factory",
+	"pages": [
+		"overview",
+		"factory-yaml",
+		"agents",
+		"automations",
+		"native-automations",
+		"workflow",
+		"skills",
+		"wiki",
+		"harness",
+		"plan-and-apply"
+	]
+}

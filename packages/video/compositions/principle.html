@@ -1,0 +1,53 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "Geist";
+      src: url("assets/fonts/geist.woff2") format("woff2");
+      font-weight: 100 900;
+    }
+    #root p {
+      margin: 0;
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+      font-family: "Geist", sans-serif;
+      color: var(--ink);
+    }
+    /* The path itself is the rail scene's, moved centre stage above these words. */
+    #principle-text {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 560px;
+      text-align: center;
+      font-size: 88px;
+      font-weight: 600;
+      line-height: 1.1;
+      letter-spacing: -0.04em;
+    }
+    #principle-text .w {
+      display: inline-block;
+    }
+    #principle-text .accent {
+      color: var(--accent);
+    }
+  </style>
+  <div id="root" data-composition-id="principle" data-width="1920" data-height="1080">
+    <p id="principle-text" class="clip" data-start="0" data-duration="4.8">
+      <span class="w">Agents</span> <span class="w">propose.</span><br />
+      <span class="w accent">The</span> <span class="w accent">engine</span> <span class="w accent">writes.</span>
+    </p>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo(
+      "#principle-text .w",
+      { opacity: 0, filter: "blur(10px)" },
+      { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out", stagger: 0.12 },
+      0.5,
+    );
+    tl.to("#principle-text .w", { opacity: 0, filter: "blur(8px)", duration: 0.18, ease: "power2.in", stagger: 0.03 }, 4.45);
+    window.__timelines["principle"] = tl;
+  </script>
+</template>

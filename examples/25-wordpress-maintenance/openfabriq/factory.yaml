@@ -1,0 +1,33 @@
+name: WordPress maintenance factory
+description: Keeps a WordPress site managed with Composer up to date and safe. Every Monday, one pull request brings core, plugins and themes up to date; every morning, a watcher reports the new vulnerabilities that hit the installed versions, and each report gets its fix as a pull request. A human merges, the site's own deploy ships it.
+repository: acme/wordpress-site
+maintainers: [alice]
+model: sonnet
+timezone: Europe/Paris
+
+# A Bedrock-style site: WordPress core, plugins and themes are Composer packages (wpackagist.org).
+setup: composer install --no-interaction --no-progress
+
+commands:
+  outdated: composer outdated --direct --format=json
+  update: composer update --with-all-dependencies --no-interaction # after the agent edits composer.json
+  vulns: scripts/wpscan-report.sh # asks WPScan about every plugin and theme; the answers land in wpscan-report.json
+  syntax: find web/app/themes web/app/mu-plugins -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
+  lint: vendor/bin/phpcs # the WordPress Coding Standards of phpcs.xml
+  analyse: vendor/bin/phpstan analyse --no-progress
+checks: [syntax, lint, analyse]
+
+secrets: [WPSCAN_API_TOKEN] # for the commands, read by the vulns script; no agent sees it
+
+network: # the sites agents and commands reach
+  - packages # the package registries, and GitHub
+  - wpackagist.org # the Composer repository of plugins and themes
+  - wordpress.org # changelogs and downloads
+  - "*.wordpress.org"
+  - wpscan.com # the vulns script
+
+limits:
+  usd_per_run: 4
+  usd_per_day: 15
+  minutes_per_run: 40
+answer_mentions: true # the agents that open pull requests answer a maintainer's @openfabriq in a comment on them; false turns it off

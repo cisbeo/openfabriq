@@ -1,0 +1,19 @@
+{
+	"name": "@openfabriq/cli",
+	"version": "0.1.0",
+	"private": true,
+	"license": "Apache-2.0",
+	"type": "module",
+	"bin": {
+		"openfabriq": "./dist/index.js"
+	},
+	"dependencies": {
+		"@clack/prompts": "1.8.1",
+		"@openfabriq/core": "workspace:*",
+		"@openfabriq/runner": "workspace:*",
+		"@openfabriq/studio": "workspace:*"
+	},
+	"devDependencies": {
+		"esbuild": "0.28.2"
+	}
+}

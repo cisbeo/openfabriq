@@ -1,0 +1,75 @@
+---
+title: MCP servers
+description: Give agents tools from MCP servers, one tool at a time.
+---
+
+An MCP server gives agents tools, such as searching Sentry or reading a design system. You declare the servers in `factory.yaml`, then list, for each agent, the tools it may call.
+
+To read your factories from Claude Code or Claude Desktop instead, openfabriq is itself an MCP server: see [MCP server](/mcp/overview/).
+
+## Declare the servers
+
+```yaml title="factory.yaml"
+mcp:
+  sentry:                                   # a remote server
+    url: https://mcp.sentry.dev/mcp
+    secret: MCP_SENTRY_TOKEN                # sent as "Authorization: Bearer <value>"
+  design:                                   # a local server, started on the engine's machine
+    command: npx -y @acme/design-system-mcp
+    secrets: [DESIGN_API_TOKEN]             # in the environment of that command only
+```
+
+| Key | For | Value |
+| --- | --- | --- |
+| `url` | A remote server (HTTP) | Its address |
+| `secret` | With `url` | The name of a secret, sent as a bearer token |
+| `command` | A local server (stdio) | The command that starts it, run through a shell |
+| `secrets` | With `command` | Names of secrets, passed to that process's environment |
+
+A `command` server reads its secrets as environment variables (`$DESIGN_API_TOKEN` above). It runs in the same sandbox as the engine's commands:
+
+- it starts in a folder of its own, never in the run's checkout, so a branch's `.npmrc` or `node_modules` cannot change what it runs;
+- it cannot read the engine's secrets;
+- its network goes through the sandbox's proxy, HTTP and HTTPS only: a local server that opens a direct connection, to a database for example, cannot work yet.
+
+## Set the secrets
+
+Give each secret's value once, on the engine's machine, like every other [secret](/factory/harness/#environment-variables-and-secrets):
+
+```bash
+openfabriq secret set MCP_SENTRY_TOKEN
+```
+
+A server's secret goes to that server only, never to the agent's environment or to your commands. It does appear in the command line of the agent's Claude Code process, which other users of the machine can list. See [Security](/reference/security/#known-limits).
+
+## Give an agent its tools
+
+```markdown title="agents/investigator/agent.md"
+---
+description: Finds the cause of a new Sentry error
+tools: [read]
+mcp:
+  sentry: [get_issue_details, search_issues]
+---
+Find the cause of the error, and say how sure you are.
+```
+
+The agent may call only the listed tools; the engine refuses the others. No other server reaches it: the engine runs agents with a strict MCP configuration, so the servers configured on your machine or in the repository are not loaded.
+
+## Rules
+
+- A server name uses lowercase letters, digits and `-`, starts with a letter, and cannot be `openfabriq`, the engine's own server.
+- A server has either `url` (an `http` or `https` address) or `command`, never both. `secret` goes with `url`, `secrets` with `command`.
+- A GitHub MCP server is refused, because an agent never writes to GitHub.
+- `plan` lists each new server, and each new tool of an agent, as a security change.
+- What an MCP tool returns is data, not instructions.
+- OAuth sign-in to a server is not supported. Use a token, or a local server.
+- The run's details in the studio list the tools an agent requested that the server did not provide.
+
+<Callout type="warn">
+An MCP server acts with the rights of its token. Use read-only tokens: the token sets the boundary, not the tool list.
+</Callout>
+
+## Related templates
+
+- [23-sentry-autofix](/templates/sentry-autofix/) uses Sentry's MCP server.

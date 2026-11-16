@@ -1,0 +1,26 @@
+name: Feature request
+description: Suggest something openfabriq should do.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        openfabriq keeps its format small and readable.
+        A change to the `openfabriq/` format is agreed here first, so describe the need before the solution.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What you are trying to do with your factory, and what stops you today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you suggest
+      description: How it could work. If it changes the `openfabriq/` format, show what the file would look like.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you tried instead
+      description: Workarounds or other approaches you considered.

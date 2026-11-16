@@ -1,0 +1,15 @@
+name: UI check factory
+description: A maintainer labels a pull request needs-ui-check, or a bug report needs-ui-repro. An agent starts the app, walks it in a real browser and says what works and what does not. Advisory only, it never pushes.
+repository: acme/web-app
+maintainers: [alice]
+model: sonnet
+
+setup: pnpm install --frozen-lockfile
+
+commands:
+  dev: pnpm dev # the agent starts it in the background, with the shell
+
+limits:
+  usd_per_run: 3
+  usd_per_day: 20
+  minutes_per_run: 30

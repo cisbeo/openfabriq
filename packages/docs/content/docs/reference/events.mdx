@@ -1,0 +1,74 @@
+---
+title: Events
+description: Every word of when, what starts it and its filters.
+---
+
+Every event of `when`, its filters, and who can start it. [Automations](/factory/automations/#when) explains how to write `when`.
+
+## GitHub
+
+| Event | Starts when | Filter | Who can start it |
+| --- | --- | --- | --- |
+| `issue.opened` | An issue is created | | Maintainers, or anyone with `from: anyone` |
+| `issue.labeled` | A label is added to an issue | `labels: [...]` | Same |
+| `issue.commented` | Someone comments on an issue | `labels`, `mentions` | Same |
+| `pull_request.opened` | A pull request is opened | `ignore_paths`, `opened_by` | Same |
+| `pull_request.updated` | New commits arrive on a pull request | `ignore_paths`, `opened_by` | Same |
+| `pull_request.labeled` | A label is added to a pull request | `labels`, `ignore_paths`, `opened_by` | Same |
+| `pull_request.changes_requested` | A review requests changes | `ignore_paths`, `opened_by` | Same |
+| `pull_request.commented` | Someone comments on a pull request (a comment, or a review "Comment") | `labels`, `mentions`, `ignore_paths`, `opened_by` | Same |
+| `pull_request.checks_failed` | The checks of the last commit finished and at least one failed | `ignore_paths`, `opened_by` | Same |
+| `pull_request.conflicted` | The pull request conflicts with its base branch | `ignore_paths`, `opened_by` | Same |
+| `default_branch.updated` | New commits arrive on the default branch | | Anyone who can push there |
+
+## Schedules
+
+| Event | Starts when | Filter | Who can start it |
+| --- | --- | --- | --- |
+| `schedule` | At a fixed time, in `timezone` | `cron: "0 9 * * 1"`, required | Nobody; time starts it |
+
+- **When the clock changes.** A time skipped in spring runs once, at the first minute after the jump: `"30 2 * * *"` runs at 03:00 the night Paris jumps from 02:00 to 03:00. A time repeated in autumn runs once, the first time.
+- **A day and a day of the week.** When both are set, either one starts it: `"0 9 1 * 1"` runs on the 1st and on every Monday. A field that starts with `*`, like `*/2`, does not count as set, so both must match: `"0 9 */2 * 1"` runs on the Mondays that fall on an odd day. This is how cron behaves on Linux.
+
+## Slack, Linear and Sentry
+
+| Event | Starts when | Filter | Who can start it |
+| --- | --- | --- | --- |
+| `slack.mentioned` | Someone mentions the bot in the channel of `integrations.slack` | | Members of the channel |
+| `linear.issue.labeled` | A label is added to an issue of the team of `integrations.linear` | `labels` | Members of the team |
+| `linear.issue.delegated` | Someone assigns or mentions openfabriq, or answers in its session | | Members of the team |
+| `sentry.issue.created` | A new issue appears in the project of `integrations.sentry` | `query: "level:error environment:production"` | Errors that reach the project |
+
+They arrive through the [relay](/deployment/relay/). To connect these services, see [Integrations](/integrations/overview/).
+
+## Webhooks
+
+| Event | Starts when | Filter | Who can start it |
+| --- | --- | --- | --- |
+| `webhook.received` | The relay receives a signed request for a webhook of `webhooks` | `webhook: <name>`, required | Whoever holds the secret |
+
+Webhooks require the [relay](/deployment/relay/). See [Webhooks](/integrations/webhooks/).
+
+## Filters
+
+- **`labels`.** On a `labeled` event, only these labels start the automation; without it, any label does. On a `commented` event, only a comment on an issue or pull request that carries one of these labels, when the engine reads the comment.
+- **`mentions`.** Only a comment that contains this word, whole and whatever the case, such as `@openfabriq`. With `labels`, both must match.
+- **`query`.** A Sentry search, passed as is, such as `level:error environment:production`.
+- **`webhook`.** The name of a webhook of `factory.yaml`; required.
+- **`ignore_paths`.** The automation does not start when **all** the files changed by the pull request match one of the patterns. `*` matches within a folder, `**` across folders.
+- **`cron`.** On `schedule`, a cron of five fields. A missed time (machine asleep, engine stopped) is caught up once, at the next pass.
+
+## Behavior to know
+
+- **`pull_request.checks_failed`.** The engine reads the end of the failed jobs' logs and gives it to the agent. Such an automation cannot have `push_to_pull_request`, because a push would run the checks again, and the automation with them.
+- **`pull_request.conflicted`.** Starts once per head and base commit; a new merge on the base starts it again. The engine tells the agent to merge the base branch and resolve.
+  - It pushes the result only if the branch contains the base and no conflict marker is left; otherwise the pull request goes to a person with `needs-human`.
+  - An agent that finds two changes contradicting each other pushes nothing and explains why in a comment.
+  - The push starts `pull_request.updated`, so a reviewer reads the resolution again before anything merges.
+  - The same checks apply to any run on a pull request where the agent merged the base in, for example on a comment `@openfabriq merge main and resolve the conflicts`. The commits the base brings are not counted as the run's own.
+- **The engine's own actions** start events as a person's do: a pull request it opens, `pull_request.opened`; its commits, `pull_request.updated` (and their checks can start `pull_request.checks_failed`); its review that requests changes, `pull_request.changes_requested`; its issue, `issue.opened`; a label it adds, `issue.labeled` or `pull_request.labeled`; its merge, `default_branch.updated`. Its comments, closes and removed labels start nothing.
+- **An automation cannot start itself.** `validate` refuses an automation whose output would start it again:
+  - `create_pull_request` with `pull_request.opened`, `request_changes` with `pull_request.changes_requested`, `create_issue` with `issue.opened`, `push_to_pull_request` with `pull_request.updated` or `pull_request.checks_failed`;
+  - `add_labels` with a `labeled` event, unless both list their labels and share none;
+  - the labels of `create_issue` with an `issue.labeled`, or those of `create_pull_request` with a `pull_request.labeled`, when that event has no `labels` filter or shares one of them.
+- **The subject the agent receives.** The issue or pull request with its comments, the Slack thread, the Linear issue, the Sentry issue and its latest stack trace, or the webhook body (up to 50,000 characters), always marked as data.

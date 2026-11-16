@@ -1,0 +1,161 @@
+---
+title: Workflow
+description: How one agent hands work to the next, through GitHub, the way a team does.
+---
+
+No central process directs the agents. Each agent finishes by leaving a trace on GitHub, such as a label, a pull request or a review, and **that trace is the event that starts the next agent**. Every step stays visible on GitHub. One loop stays on the machine: the [internal review](#the-internal-review), where a reviewer reads a change before it reaches GitHub.
+
+## One hand-off
+
+The triage agent decides that an issue is ready, and the implementer takes it:
+
+<Flow
+	steps={[
+		{ event: "Issue opened", start: true },
+		{ agent: "triage", detail: "triage-issues" },
+		"adds the label ready-for-agent",
+		{ event: "Issue labeled", detail: "ready-for-agent" },
+		{ agent: "implementer", detail: "implement-ready-issues" },
+	]}
+/>
+
+Two files make this link. The first may **write** the label; the second **starts** on it.
+
+<Tabs items={["triage-issues", "implement-ready-issues"]}>
+<Tab value="triage-issues">
+
+```yaml title="automations/triage-issues/automation.md (header)"
+when: [issue.opened, issue.commented]
+agent: triage
+can:
+  - add_comment
+  - add_labels: [ready-for-agent, needs-info, needs-investigation]
+```
+
+</Tab>
+<Tab value="implement-ready-issues">
+
+```yaml title="automations/implement-ready-issues/automation.md (header)"
+when:
+  issue.labeled: { labels: [ready-for-agent] }
+agent: implementer
+can:
+  - create_pull_request
+  - remove_labels: [ready-for-agent]
+```
+
+</Tab>
+</Tabs>
+
+## What starts what
+
+| When the engine writes | It starts |
+| --- | --- |
+| A label (`add_labels`) | `issue.labeled` or `pull_request.labeled` with that label |
+| A pull request (`create_pull_request`) | `pull_request.opened`, and `pull_request.labeled` for each label of `create_pull_request: [a, b]` |
+| Commits (`push_to_pull_request`) | `pull_request.updated`, and `pull_request.checks_failed` if the checks they run fail |
+| A review (`request_changes`) | `pull_request.changes_requested` |
+| An issue (`create_issue`) | `issue.opened`, and `issue.labeled` for each label of `create_issue: [a, b]` |
+| A close (`close_issue`, `close_pr`), a removed label (`remove_labels`) | **Nothing** |
+| A merge (`merge_pull_request`) | `default_branch.updated`, as a person's merge does |
+| A comment (`add_comment`) | **Nothing** |
+
+Comments start nothing by design: otherwise an agent that comments on an issue it listens to would restart itself forever. For the other writes, `validate` refuses an automation whose own output would start it again; the [events reference](/reference/events/#behavior-to-know) lists each case.
+
+## A complete loop
+
+The [02-sdlc template](/templates/sdlc/) takes an issue from creation to merge in three stages.
+
+### 1. Triage
+
+The triage agent reads the new issue and adds one label:
+
+<Flow
+	steps={[
+		{ event: "Issue opened", start: true },
+		{ agent: "triage", detail: "triage-issues" },
+		"adds one label",
+		[
+			{ event: "ready-for-agent", detail: "clear enough to build" },
+			{ event: "needs-info", detail: "you answer its questions", you: true },
+			{ event: "needs-investigation", detail: "an investigator looks first" },
+		],
+	]}
+/>
+
+### 2. Implementation, reviewed before the pull request
+
+The implementer makes the change, and the reviewer reads it before anything reaches GitHub:
+
+<Flow
+	steps={[
+		{ event: "Issue labeled", detail: "ready-for-agent" },
+		{ agent: "implementer", detail: "implement-ready-issues" },
+		"finishes, the checks pass",
+		{ agent: "reviewer", detail: "reviewed_by" },
+		"decides",
+		[
+			{ event: "Approved", detail: "the pull request opens" },
+			{ event: "Needs changes", detail: "back to the implementer" },
+			{ event: "Needs a person", detail: "opens with needs-human", you: true },
+		],
+	]}
+	caption="Needs changes goes back to the implementer, at most review_rounds times, before anything leaves the machine."
+/>
+
+### 3. A person merges, or asks for more
+
+The pull request reaches you with one line on its review. Merge it, or mention `@openfabriq` in a comment: the implementer goes back to it, and the reviewer reads that change too.
+
+<Flow
+	steps={[
+		{ event: "PR opened", icon: "pr" },
+		{ event: "You comment", detail: "@openfabriq rename this", you: true },
+		{ agent: "implementer", detail: "answer-mentions" },
+		"reviewed, then pushes",
+		{ event: "PR updated", icon: "pr" },
+	]}
+/>
+
+The studio draws this graph for your own factory, from its files: see [Workflow](/studio/workflow/).
+
+![The studio's workflow: events in pills, agents in boxes, amber where a person acts.](/screenshots/studio/workflow.png)
+
+## The internal review [#the-internal-review]
+
+An automation that publishes code can name the agent that reviews it:
+
+```yaml title="automations/implement-ready-issues/automation.md (header)"
+when:
+  issue.labeled: { labels: [ready-for-agent] }
+agent: implementer
+reviewed_by: reviewer
+can: [create_pull_request, add_comment]
+```
+
+When the implementer finishes and the [checks](/factory/harness/#checks) pass, the engine runs the reviewer in the same checkout. The reviewer changes nothing and writes nothing on GitHub: it answers with a verdict, `approved`, `needs_changes` or `needs_human`, and findings.
+
+- **Needs changes**: the implementer gets the findings, fixes them and finishes again; the checks run again, then the review.
+- **Approved**: the pull request opens, or the push goes, with one line at the end of its description, `Reviewed before opening by reviewer: approved after 2 rounds, risk low.`, and the labels `ready-to-merge` and `risk:low` (or `risk:medium`, `risk:high`).
+- **Needs a person**, or `review_rounds` rounds spent: the pull request opens anyway, with `needs-human` and an *Internal review* section listing only the findings still open. For a push, the same list goes in a comment.
+
+Every round is on the run's page in the studio, with its verdict, findings and cost. The rules are under [`reviewed_by`](/factory/automations/#reviewed-by).
+
+## How a loop stops
+
+The engine hands work to a person with `needs-human`, its own label for that:
+
+- past `review_rounds` in `factory.yaml`, instead of starting another round: rounds of review inside a run with `reviewed_by`, or, for a factory that reviews on GitHub, review and rework rounds on a pull request;
+- after a failed run, or a code change whose checks still fail;
+- after a run started by changes requested that pushes nothing: without new commits, no new review would come.
+
+Watch for `needs-human` on GitHub, or filter the studio's board on *Needs you*. A pull request the internal review approved gets `ready-to-merge` and a risk label instead, so one ready to merge never looks like one a person must rescue; a reviewer on GitHub, as in [05-code-review](/templates/code-review/), adds the same labels itself. While a run works on an issue or a pull request, it carries `openfabriq:working`, which starts nothing ([While a run works](/integrations/github/#while-a-run-works)). See [the labels the engine puts](/integrations/github/#engine-labels).
+
+## People in the loop
+
+A run never waits for a person. People act on GitHub, and their action starts the next run:
+
+- answering a triage's questions starts `issue.commented`;
+- adding `ready-for-agent` when a spec is settled starts the implementation, as in [10-spec-first](/templates/spec-first/);
+- merging a migration's plan starts `default_branch.updated`, and the planner opens the first tickets; each later merge opens the tickets it unblocks. In [Webflow to Astro](/templates/webflow-to-astro/), a maintainer merges the plan, then each pull request the parity review approved before it opened, and the factory builds the rest;
+- merging is a person's decision, except what [`merge_pull_request`](/factory/automations/#auto-merge) allows.

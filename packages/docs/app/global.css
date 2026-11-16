@@ -1,0 +1,345 @@
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+
+/* The studio's faces: the site and the app's screenshots read the same. */
+@theme {
+	--font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+	--font-mono:
+		var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+/* The studio's blue (packages/studio/app/src/styles.css): the docs and the app's screenshots share one accent. */
+:root {
+	--color-fd-primary: oklch(0.5 0.19 262);
+	/* Fumadocs' 45% grey reads at about 4.3:1 on its own background; 38% clears 4.5:1 on cards too. */
+	--color-fd-muted-foreground: hsl(0, 0%, 38%);
+}
+
+.dark {
+	--color-fd-primary: oklch(0.74 0.13 262);
+	/* Fumadocs' own dark value: the light override above must not reach it. */
+	--color-fd-muted-foreground: hsla(0, 0%, 70%, 0.8);
+}
+
+::selection {
+	background: color-mix(in oklch, var(--color-fd-primary) 22%, transparent);
+}
+
+/* ── Reading rhythm ───────────────────────────────────────────────────────── */
+
+/* About 75 characters a line: text stops there, tables, code and diagrams keep the full column. */
+.prose {
+	--of-measure: 35rem;
+}
+.prose
+	:where(p, ul, ol, dl, blockquote, h2, h3, h4):not(
+		:where(table *, li *, .not-prose *, [role="tabpanel"] *)
+	) {
+	max-width: var(--of-measure);
+}
+.prose :where([style*="--callout-color"]) {
+	max-width: var(--of-measure);
+}
+
+/* More air before a section than inside it. Not for a component's own heading, such as an accordion's title. */
+.prose h2:not(.not-prose, .not-prose *) {
+	margin-top: 3.5rem;
+}
+.prose h3:not(.not-prose, .not-prose *) {
+	margin-top: 2.25rem;
+}
+
+/* Callouts: the words are the point, so they read in the text color, not in grey. */
+.prose [style*="--callout-color"] .text-fd-muted-foreground {
+	color: color-mix(in oklab, var(--color-fd-foreground) 82%, transparent);
+}
+
+/* ── Code ─────────────────────────────────────────────────────────────────── */
+
+/* In a heading, code is part of the title, not a box. Tables keep their boxes: they mark file and key names. */
+.prose :where(h2, h3, h4) code {
+	border: 0;
+	background: none;
+	padding: 0;
+	font-size: 0.9em;
+	color: inherit;
+}
+
+/* In light mode, code sits a step lighter than the page: the syntax colors keep 4.5:1. */
+html:not(.dark) figure.shiki,
+html:not(.dark) .of-code-surface {
+	background-color: var(--color-fd-popover);
+}
+/* GitHub's comment grey falls just under 4.5:1 off pure white: one shade darker. */
+html:not(.dark) :where(figure.shiki, .of-code) span[style*="#6E7781"] {
+	color: #626b75;
+}
+
+/* A link inside a diagram caption still looks like a link. */
+.not-prose figcaption a {
+	color: var(--color-fd-foreground);
+	text-decoration: underline;
+	text-decoration-color: color-mix(
+		in oklab,
+		var(--color-fd-primary) 50%,
+		transparent
+	);
+	text-underline-offset: 3px;
+}
+.not-prose figcaption a:hover {
+	text-decoration-color: var(--color-fd-primary);
+}
+
+/* Screenshots of the studio: a hairline and a radius so they read as windows on the page. */
+.prose img {
+	border: 1px solid var(--color-fd-border);
+	border-radius: 0.5rem;
+	max-width: 100%;
+	height: auto;
+}
+
+/* The caption under a screenshot: an emphasis that is the whole paragraph. */
+.prose p > em:only-child {
+	color: var(--color-fd-muted-foreground);
+	font-size: 0.875rem;
+}
+
+/* The factory explorer's code: Shiki's two themes, and a line number before each line. */
+.of-code pre {
+	margin: 0;
+	padding: 1rem 1.25rem 1rem 0;
+	background: transparent;
+	font-size: 13px;
+	line-height: 1.75;
+}
+/* A grid ignores the newlines between Shiki's lines; each line wraps under its own text. */
+.of-code code {
+	display: grid;
+	counter-reset: line;
+}
+.of-code .line {
+	position: relative;
+	min-height: 1lh;
+	padding-left: 3.5rem;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+.of-code .line::before {
+	counter-increment: line;
+	content: counter(line);
+	position: absolute;
+	left: 0;
+	width: 2.5rem;
+	text-align: right;
+	color: var(--color-fd-muted-foreground);
+	opacity: 0.4;
+}
+.of-code span {
+	color: var(--shiki-light);
+}
+.dark .of-code span {
+	color: var(--shiki-dark);
+}
+
+/* A snippet on the home page: the same code, without line numbers. */
+.of-snippet pre {
+	padding: 1.25rem 1.5rem;
+}
+.of-snippet .line {
+	padding-left: 0;
+	white-space: pre;
+	overflow-wrap: normal;
+}
+.of-snippet .line::before {
+	content: none;
+}
+/* Printed output wraps under its own indentation instead of hiding its end. */
+.of-snippet.of-wrap .line {
+	white-space: pre-wrap;
+	padding-left: 2ch;
+	text-indent: -2ch;
+}
+
+/* ── Landing and templates ────────────────────────────────────────────────── */
+
+/* The studio's states (packages/studio/app/src/styles.css): one hue per state, nowhere else. */
+:root {
+	--of-ground: oklch(0.984 0.0015 264);
+	--of-panel: oklch(1 0 0);
+	--of-sunken: oklch(0.966 0.003 264);
+	--of-line: oklch(0.919 0.004 264);
+	--of-accent-soft: oklch(0.54 0.19 262 / 0.08);
+	--of-accent-line: oklch(0.54 0.19 262 / 0.3);
+	--of-ok: oklch(0.55 0.13 152);
+	--of-ok-soft: oklch(0.55 0.13 152 / 0.1);
+	--of-warn: oklch(0.51 0.12 66);
+	--of-warn-soft: oklch(0.7 0.14 80 / 0.14);
+	--of-bad: oklch(0.55 0.2 27);
+	--of-bad-soft: oklch(0.55 0.2 27 / 0.09);
+	--of-shadow-1:
+		0 1px 2px oklch(0.2 0.02 264 / 0.05), 0 0 0 1px oklch(0.2 0.02 264 / 0.015);
+	--of-shadow-2:
+		0 4px 12px -4px oklch(0.2 0.02 264 / 0.1),
+		0 1px 2px oklch(0.2 0.02 264 / 0.06);
+	--of-shadow-3:
+		0 24px 48px -16px oklch(0.2 0.02 264 / 0.18),
+		0 4px 12px -4px oklch(0.2 0.02 264 / 0.08);
+	--of-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+.dark {
+	--of-ground: oklch(0.158 0.005 264);
+	--of-panel: oklch(0.188 0.006 264);
+	--of-sunken: oklch(0.172 0.005 264);
+	--of-line: oklch(0.262 0.007 264);
+	--of-accent-soft: oklch(0.66 0.16 262 / 0.13);
+	--of-accent-line: oklch(0.66 0.16 262 / 0.4);
+	--of-ok: oklch(0.74 0.14 152);
+	--of-ok-soft: oklch(0.74 0.14 152 / 0.12);
+	--of-warn: oklch(0.8 0.13 80);
+	--of-warn-soft: oklch(0.8 0.13 80 / 0.12);
+	--of-bad: oklch(0.7 0.17 25);
+	--of-bad-soft: oklch(0.7 0.17 25 / 0.13);
+	--of-shadow-1: 0 1px 2px oklch(0 0 0 / 0.3);
+	--of-shadow-2:
+		0 6px 16px -4px oklch(0 0 0 / 0.5), 0 1px 2px oklch(0 0 0 / 0.3);
+	--of-shadow-3:
+		0 28px 56px -16px oklch(0 0 0 / 0.7), 0 2px 6px oklch(0 0 0 / 0.3);
+}
+
+@theme inline {
+	--color-of-ground: var(--of-ground);
+	--color-of-panel: var(--of-panel);
+	--color-of-sunken: var(--of-sunken);
+	--color-of-line: var(--of-line);
+	--color-of-accent-soft: var(--of-accent-soft);
+	--color-of-accent-line: var(--of-accent-line);
+	--color-of-ok: var(--of-ok);
+	--color-of-ok-soft: var(--of-ok-soft);
+	--color-of-warn: var(--of-warn);
+	--color-of-warn-soft: var(--of-warn-soft);
+	--color-of-bad: var(--of-bad);
+	--color-of-bad-soft: var(--of-bad-soft);
+	--shadow-of-1: var(--of-shadow-1);
+	--shadow-of-2: var(--of-shadow-2);
+	--shadow-of-3: var(--of-shadow-3);
+	--ease-of: var(--of-ease);
+}
+
+.tnum {
+	font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+	outline: 2px solid var(--color-fd-primary);
+	outline-offset: 2px;
+	border-radius: 4px;
+}
+
+/* A value that changes arrives from below, out of a blur: the run's clock and cost. */
+@keyframes of-digit {
+	from {
+		opacity: 0;
+		transform: translateY(0.45em);
+		filter: blur(3px);
+	}
+}
+.of-digit {
+	display: inline-block;
+	animation: of-digit 0.42s var(--of-ease) both;
+}
+
+/* A log line, a card, a reply: slides in once, already readable. */
+@keyframes of-enter {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+}
+.of-enter {
+	animation: of-enter 0.5s var(--of-ease) both;
+}
+
+/* What is working breathes: the studio's working dot. */
+@keyframes of-pulse {
+	0% {
+		box-shadow: 0 0 0 0
+			color-mix(in oklch, var(--color-fd-primary) 45%, transparent);
+	}
+	100% {
+		box-shadow: 0 0 0 6px transparent;
+	}
+}
+.of-pulse {
+	animation: of-pulse 1.6s var(--of-ease) infinite;
+}
+
+/* The engine's link: a signal travels from the cause to the effect. */
+@keyframes of-signal {
+	from {
+		transform: translateX(-100%);
+	}
+	to {
+		transform: translateX(400%);
+	}
+}
+.of-signal {
+	animation: of-signal 1.4s var(--of-ease) infinite;
+}
+
+/* How long until the next example: a hairline that fills. */
+@keyframes of-progress {
+	from {
+		transform: scaleX(0);
+	}
+	to {
+		transform: scaleX(1);
+	}
+}
+
+/* Glosses beside a file's lines: what each key means, in the margin. */
+.of-notes .line[data-note] {
+	background: var(--of-accent-soft);
+}
+/* A long noted line wraps before its gloss instead of running under it. */
+@media (min-width: 64.01rem) {
+	.of-notes .line[data-note] {
+		padding-right: 12rem;
+	}
+}
+.of-notes .line[data-note]::after {
+	content: attr(data-note);
+	position: absolute;
+	right: 1rem;
+	top: 50%;
+	translate: 0 -50%;
+	padding: 0.05rem 0.55rem;
+	border: 1px solid var(--of-accent-line);
+	border-radius: 999px;
+	background: var(--of-panel);
+	color: var(--color-fd-primary);
+	font-family: var(--font-sans);
+	font-size: 11.5px;
+	line-height: 1.6;
+	white-space: nowrap;
+}
+/* Below a laptop's width the file has no margin left for them. */
+@media (max-width: 64rem) {
+	.of-notes .line[data-note]::after {
+		content: none;
+	}
+}
+
+/* The workflow images are drawn in the studio's light theme: inverted, they keep their hues. */
+.dark .of-diagram {
+	filter: invert(0.92) hue-rotate(180deg) saturate(1.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.of-digit,
+	.of-enter,
+	.of-pulse,
+	.of-signal {
+		animation: none;
+	}
+}

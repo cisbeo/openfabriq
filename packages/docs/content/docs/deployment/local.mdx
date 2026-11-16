@@ -1,0 +1,111 @@
+---
+title: Local
+description: Install openfabriq on your computer and run the engine in a terminal. The quickest way to start.
+---
+
+openfabriq installed on your computer, started in a terminal, with your Claude Code and `gh` logins. For a team, on an always-on server, use [Docker](/deployment/docker/).
+
+## Before you start
+
+On your computer:
+
+1. [Install openfabriq](/getting-started/install/), with Claude Code and `gh` logged in.
+2. In a clone of each repository, run `openfabriq apply` ([Quickstart](/getting-started/quickstart/)).
+
+## Start the engine
+
+```bash
+openfabriq start
+```
+
+One process watches **every** applied repository of the machine. It stays in the foreground; `Ctrl-C` stops it. Run only one: a second `start` stops before doing anything, since the studio's port is taken, or, with another `--port`, another engine already runs the same data folder.
+
+In a repository whose `openfabriq/` changed since the last apply, it first shows the plan and asks to apply it: answer `y`. Enter alone, or any other answer, starts the engine with the factory applied before.
+
+In a terminal, it starts with the studio's address, then the log:
+
+```text
+  Studio    http://127.0.0.1:4310/?token=…
+            open it to follow the runs · Ctrl-C stops the engine
+  Watching  acme/api-service, acme/web-app, every 60 s
+  Claude    this machine's Claude Code login
+
+  ── activity ──
+```
+
+![openfabriq start in a terminal: the mark, then the studio's address, what the engine watches and its Claude, then the activity.](/screenshots/cli/start.png)
+
+Open that address, with its token, to follow the runs in the [studio](/studio/overview/). In a pipe or in Docker's logs, the same facts are log lines, the address on the one that starts with `studio on`.
+
+## What it does every minute
+
+1. **Watch.** Read each project's new GitHub events with `gh`, take what the relay kept for Slack, Linear, Sentry and webhooks, and compare them with the `when` of the applied factory.
+2. **Queue.** Each matching event becomes a run in the queue, written to disk: a restart loses nothing. A run interrupted by a stop is marked failed and queued once more.
+3. **Prepare.** Create a worktree of the engine's own clone (from the default branch, or the pull request's branch), run `setup`, load the skills.
+4. **Run the agent** with your Claude Code: its brief, the automation's task, the subject marked as data, its tools, one tool per `can` word.
+5. **Apply.** Run the checks if the agent changed files, check each proposal against `can`, apply it with `gh`, note what was refused.
+6. **Record** the run: status, duration, tokens, cost, outputs.
+
+The number of simultaneous runs is limited for the whole machine, since they share one subscription.
+
+## Everyday commands
+
+```bash
+openfabriq start --interval 30     # poll every 30 seconds (10 or more)
+openfabriq start --port 4320       # the studio on another port
+openfabriq status                  # runs in progress, waiting and recent, from another terminal
+openfabriq run <automation> [--issue n | --pr n] [--project owner/repo]
+openfabriq mcp                     # the factories, read only, for Claude Code or Claude Desktop
+```
+
+![openfabriq status: for each project, the runs in progress, waiting and recent, each status in its color.](/screenshots/cli/status.png)
+
+`openfabriq run` asks the running engine to start an automation now: try an automation, or run a scheduled one outside its schedule.
+
+After `openfabriq apply`, a new or changed factory is picked up at the next pass, with no restart. After an `openfabriq connect`, or when the factory's Slack, Linear, Sentry or `webhooks` changed, restart `start`: it connects them when it starts.
+
+## Schedules and sleep
+
+Nothing runs while the machine sleeps. A missed schedule is **caught up once**: at the next pass, the engine starts one run for the most recent time missed, and the studio shows it as *caught up*. During a run, the engine keeps a Mac awake (`caffeinate -i`).
+
+For a nightly task that must start on time on a Mac, wake the machine just before:
+
+```bash
+sudo pmset repeat wakeorpoweron MTWRFSU 01:55:00
+```
+
+## Your quota
+
+Runs use the machine's Claude Code subscription: on your computer, they share its quota with your own sessions. Keep `limits` honest, and watch the cost in the [studio's overview](/studio/overview/).
+
+If `ANTHROPIC_API_KEY` is set in the shell that starts the engine, runs use that key instead, billed per token, and `openfabriq start` says so on its first lines. Unset it before `openfabriq start` to stay on your subscription.
+
+## Update openfabriq
+
+```bash
+openfabriq update
+```
+
+It updates openfabriq the way it was installed: `brew upgrade openfabriq` for Homebrew, otherwise `npm install -g openfabriq@latest`. From the sources or in Docker, it says how to update instead. `start` prints a line when a new version is out.
+
+- From the sources: `git pull && pnpm install && pnpm build` in its folder; the command keeps working.
+- The [Claude Code plugin](/getting-started/install/#the-claude-code-plugin), if you installed it: `claude plugin marketplace update openfabriq && claude plugin update openfabriq@openfabriq`.
+- On a server: see [Docker](/deployment/docker/#keep-it-up-to-date).
+
+Then restart `start`. If the format changed, the studio and `plan` say the applied factory no longer loads: run `openfabriq validate`, fix what it lists, and `apply` again.
+
+## Where files are kept
+
+Your factory is the `openfabriq/` folder of your repository, versioned with your code. The engine keeps everything else on its own machine, in `~/.openfabriq`: the applied factories, its clones, the queue, the runs and their transcripts, the chat's conversations, the tokens saved by `openfabriq connect` (`secrets.json`, mode `0600`) and the values saved by `openfabriq secret set`. The paths, and `OPENFABRIQ_HOME` to move the folder, are in [The data folder](/reference/environment/#the-data-folder).
+
+Worktrees of finished runs are removed.
+
+## Forget a project
+
+Delete its folder `~/.openfabriq/projects/<owner>/<repo>/` while `start` is stopped. The `openfabriq/` folder of your repository stays yours.
+
+## Uninstall
+
+1. Stop `openfabriq start` (`Ctrl-C`).
+2. Remove the command: `brew uninstall openfabriq`, or `npm uninstall -g openfabriq`. If you installed the plugin: `claude plugin uninstall openfabriq@openfabriq`.
+3. Remove its data, runs and saved tokens included: `rm -rf ~/.openfabriq` (or your `OPENFABRIQ_HOME`).

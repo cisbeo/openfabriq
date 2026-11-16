@@ -1,0 +1,108 @@
+# The openfabriq engine on a server, in Docker. Next to this file, write a .env file:
+#   ANTHROPIC_API_KEY=...         a Claude Console API key, billed per token; or
+#   CLAUDE_CODE_OAUTH_TOKEN=...   from `claude setup-token`, for a server only you use; the key wins
+#   GITHUB_APP_ID=...             your team's GitHub App, from `openfabriq connect github`;
+#   GITHUB_APP_PRIVATE_KEY=...    its key on one line (base64 or \n escapes). It commits as the
+#                                 app's bot, unless GIT_USER_NAME and GIT_USER_EMAIL name another
+#   or, instead of the app:
+#   GH_TOKEN=...                  a classic token of the account that writes the pull requests
+#   GIT_USER_NAME=Acme factory    the identity of the factory's commits
+#   GIT_USER_EMAIL=factory@acme.dev
+#   OPENFABRIQ_REPOSITORIES=acme/web-app,acme/api   the GitHub repositories to run, as owner/name
+# then: docker compose up -d
+# The studio is on the server's 127.0.0.1:4310 only: ssh -L 4310:127.0.0.1:4310 <server>, then open
+# the address that `docker compose logs engine` prints, with its ?token=. Or, simpler:
+#   OPENFABRIQ_STUDIO_PASSWORD=...  16 characters or more: the studio shows a sign-in form
+#   OPENFABRIQ_STUDIO_URL=https://factory.example.com   with the password: a domain your proxy
+#                                   (Coolify's Traefik, Caddy) sends to this service's port 4311
+#   GITHUB_APP_CLIENT_ID=...        with the GitHub App and the domain, instead of or beside the
+#   GITHUB_APP_CLIENT_SECRET=...    password: who can write to the repositories signs in with GitHub
+# The relay, on this machine too (RELAY_DOMAIN and ENGINE_TOKEN in .env):
+#   docker compose --profile relay up -d
+services:
+  engine:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      # Debian packages your factory's commands need, that openfabriq doctor lists in the logs.
+      args:
+        APT_PACKAGES: ${OPENFABRIQ_APT_PACKAGES:-}
+    restart: unless-stopped
+    # tini reaps the processes the runs leave; SIGINT lets running runs finish (openfabriq start).
+    init: true
+    stop_signal: SIGINT
+    environment:
+      # One of the two; the entrypoint stops without either.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
+      # A token, or the GitHub App's two variables; the entrypoint stops without either.
+      GH_TOKEN: ${GH_TOKEN:-}
+      GITHUB_APP_ID: ${GITHUB_APP_ID:-}
+      GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY:-}
+      GIT_USER_NAME: ${GIT_USER_NAME:-}
+      GIT_USER_EMAIL: ${GIT_USER_EMAIL:-}
+      OPENFABRIQ_REPOSITORIES: ${OPENFABRIQ_REPOSITORIES:?owner/repo, comma-separated}
+      # Optional: the studio's sign-in, and its https address. Never given to agents.
+      OPENFABRIQ_STUDIO_PASSWORD: ${OPENFABRIQ_STUDIO_PASSWORD:-}
+      OPENFABRIQ_STUDIO_URL: ${OPENFABRIQ_STUDIO_URL:-}
+      # Optional: sign-in with GitHub through the GitHub App, with OPENFABRIQ_STUDIO_URL.
+      GITHUB_APP_CLIENT_ID: ${GITHUB_APP_CLIENT_ID:-}
+      GITHUB_APP_CLIENT_SECRET: ${GITHUB_APP_CLIENT_SECRET:-}
+      # Optional: how many runs go at once, 4 when empty; about 1 to 1.5 GB of memory each with a browser.
+      OPENFABRIQ_MAX_RUNS: ${OPENFABRIQ_MAX_RUNS:-}
+      # Optional: how often GitHub is read, in seconds, 60 when empty; 10 or more. A GitHub App allows 5,000 calls an hour.
+      OPENFABRIQ_INTERVAL: ${OPENFABRIQ_INTERVAL:-}
+      # The values of the factories' secrets, if any, go here too, or are kept in the volume by
+      # `docker compose exec engine openfabriq secret set`; a variable wins.
+    volumes:
+      # The queue, the runs, the applied factories, the clones, the connections' tokens and the secrets.
+      - engine-data:/home/factory/.openfabriq
+    ports:
+      - "127.0.0.1:4310:4311"
+    # bubblewrap, the agents' and commands' sandbox, creates user namespaces and mounts its own
+    # /proc: Docker's seccomp and AppArmor profiles and its masked /proc paths forbid both.
+    # Measured: these three are enough, --privileged is not needed.
+    security_opt:
+      - seccomp=unconfined
+      - apparmor=unconfined
+      - systempaths=unconfined
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  # Compose reads these variables even without the profile, so they cannot be required here.
+  # Without ENGINE_TOKEN the relay refuses every engine; without RELAY_DOMAIN Caddy does not start.
+  relay:
+    profiles: [relay]
+    build: packages/relay
+    restart: unless-stopped
+    environment:
+      ENGINE_TOKEN: ${ENGINE_TOKEN:-}
+    volumes:
+      - relay-data:/relay/data
+    # Its own network: the relay and Caddy face the Internet and never reach the engine,
+    # which reaches the relay by its public address (`connect relay --url https://<RELAY_DOMAIN>`).
+    networks: [relay]
+
+  # HTTPS with a Let's Encrypt certificate, renewed by Caddy; Caddyfile also caps the body size.
+  caddy:
+    profiles: [relay]
+    image: caddy:2.10.2
+    restart: unless-stopped
+    environment:
+      RELAY_DOMAIN: ${RELAY_DOMAIN:-}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./packages/relay/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    networks: [relay]
+
+volumes:
+  engine-data:
+  relay-data:
+  caddy-data:
+
+networks:
+  relay:

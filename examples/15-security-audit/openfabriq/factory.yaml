@@ -1,0 +1,16 @@
+name: Security audit factory
+description: Every Monday, an agent audits the dependencies and reads the authentication and input-handling code, and opens one issue per real finding. It changes nothing; a human decides.
+repository: acme/api-service
+maintainers: [alice]
+model: sonnet
+timezone: Europe/Paris # the weekly run's clock
+
+setup: pnpm install --frozen-lockfile
+
+commands:
+  audit: pnpm audit --prod --json > audit-report.json # fails when it finds advisories; the report is in the file either way
+
+limits:
+  usd_per_run: 5
+  usd_per_day: 10
+  minutes_per_run: 45

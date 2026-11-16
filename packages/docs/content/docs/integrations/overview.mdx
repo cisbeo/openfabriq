@@ -1,0 +1,49 @@
+---
+title: Overview
+description: Start the factory from Slack, Linear, Sentry or any signed webhook, and give agents MCP servers.
+---
+
+[GitHub](/integrations/github/) is always connected: the engine reads it through `gh`, with nothing to install, or as your team's GitHub App once you run [`openfabriq connect github`](/deployment/docker/#the-github-app). Every other service is optional. You declare it in `factory.yaml`, and it reaches the engine through [your relay](/deployment/relay/): run `openfabriq connect relay` once, then `openfabriq connect <service>`.
+
+| Service | Starts the factory with | Answers with | Requires |
+| --- | --- | --- | --- |
+| [GitHub](/integrations/github/) | Issues, labels, comments (`@openfabriq`), reviews, pushes | Comments, labels, pull requests | Nothing: `gh`; or a GitHub App, with `openfabriq connect github` |
+| [Slack](/integrations/slack/) | `slack.mentioned` | A reply in the thread, with the pull request link | `integrations.slack`, the relay, `openfabriq connect slack` |
+| [Linear](/integrations/linear/) | `linear.issue.labeled`, `linear.issue.delegated` | A comment and labels on the Linear issue, and progress in the agent session | `integrations.linear`, the relay, `openfabriq connect linear` |
+| [Sentry](/integrations/sentry/) | `sentry.issue.created` | A note on the Sentry issue, a GitHub issue or a pull request | `integrations.sentry`, the relay, `openfabriq connect sentry` |
+| [Webhooks](/integrations/webhooks/) | `webhook.received` | A GitHub issue or pull request | `webhooks`, the [relay](/deployment/relay/), `openfabriq connect webhook` |
+| [MCP servers](/integrations/mcp/) | Nothing; they give tools to agents | | `mcp` in `factory.yaml` and in `agent.md` |
+
+## How the engine receives events
+
+The engine opens no port. GitHub is read with `gh`; every other service enters through [the relay](/deployment/relay/#do-you-need-it), a small server you deploy once (on a free Cloudflare account, or your own machine), and the engine connects outward to it.
+
+The relay keeps each event for up to 7 days, so a machine that sleeps for less misses nothing. It keeps at most 10,000 events or 100 MB waiting: past that, it answers new deliveries with `503` and `Retry-After: 60`, and only a sender that tries again gets its event through.
+
+## Tokens
+
+`openfabriq connect <service>` guides you through the setup, tests the token, and gives the relay what it needs.
+
+- The tokens the engine uses itself (Slack's bot token, Sentry's token) are stored in `~/.openfabriq/secrets.json` (mode `0600`), or set as `OPENFABRIQ_SLACK_BOT_TOKEN` and `OPENFABRIQ_SENTRY_TOKEN`. See [Environment variables](/reference/environment/#service-tokens).
+- Linear's tokens stay in the relay, which refreshes them.
+
+Agents never see these tokens. Their environment drops every `OPENFABRIQ_*`, `SLACK_*`, `LINEAR_*` and `SENTRY_*` variable, and any variable that looks like a secret.
+
+`start` connects to the relay when a factory listens to a service, and reports what is missing: the relay, or a token. Restart `start` after each `connect`.
+
+## Who can start a run
+
+`maintainers` lists GitHub logins, so it does not apply to these services. Access to the source is the gate:
+
+- for Slack, the members of the channel (use a private channel);
+- for Linear, the members of the team;
+- for Sentry, the errors that reach the project;
+- for a webhook, whoever holds its signing secret.
+
+Adding or changing an integration appears as a security change in `plan`.
+
+Content from a service (a Slack thread, a Linear issue, a stack trace, a webhook body) reaches the agent as data, between markers such as `<slack-data>`, never as instructions.
+
+## Several factories on one machine
+
+A machine has one relay, one Linear application and one Slack bot. An event goes to every factory that declares it. `apply` refuses a webhook name that another project already uses, and warns when another project uses the same Linear team or Slack channel, since a mention would then start a run in each project.

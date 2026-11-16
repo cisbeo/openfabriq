@@ -1,0 +1,11 @@
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+**/.env*
+**/.next
+**/.wrangler
+.git
+.claude
+.vitest
+.stryker-tmp
+reports

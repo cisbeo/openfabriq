@@ -1,0 +1,9 @@
+# Caddy in front of the self-hosted relay, used by both docker-compose.yml files.
+# HTTPS for RELAY_DOMAIN, with a Let's Encrypt certificate renewed by Caddy.
+{$RELAY_DOMAIN} {
+	# The relay's MAX_BODY (src/shared/http.ts): a larger body stops here, before the relay reads it.
+	request_body {
+		max_size 1MiB
+	}
+	reverse_proxy relay:8080
+}

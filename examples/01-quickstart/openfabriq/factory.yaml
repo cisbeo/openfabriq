@@ -1,0 +1,16 @@
+name: Quickstart factory
+description: The smallest useful factory. A maintainer labels an issue, an agent opens a pull request, a human merges.
+repository: acme/api-service
+maintainers: [alice] # only their actions start the factory
+model: sonnet # the model of the agent
+
+setup: npm ci # prepare each run's checkout: install the dependencies
+commands: # your project's commands, by name
+  test: npm test
+checks: [test] # run by the engine before any pull request leaves the machine
+
+limits:
+  usd_per_run: 5
+  usd_per_day: 20
+  minutes_per_run: 45
+answer_mentions: true # the agents that open pull requests answer a maintainer's @openfabriq in a comment on them; false turns it off

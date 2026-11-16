@@ -1,0 +1,57 @@
+---
+title: Security model
+description: What an agent can and cannot do, and what you still have to watch.
+---
+
+What the engine guarantees about agents, and the limits you remain responsible for.
+
+## Guarantees
+
+### What reaches GitHub
+
+- **Agents never write to GitHub.** They have no token, an empty `gh` configuration, no git credential helper and no SSH agent. They propose outputs; the engine applies only those `can` allows.
+- **What runs is what was applied.** The engine reads the copy made by `apply`, not your branch, so a pull request cannot change the automations that judge it.
+- **The engine runs the checks** itself, from the applied factory, before code leaves the machine, and refuses changes to CI workflows. A [script](/factory/harness/#scripts) that a command runs also comes from the applied factory, never from the run's branch; what the script calls, such as `pnpm build`, still runs the branch's code.
+- **`plan` shows security first.** New rights, tools, commands, MCP servers and integrations, raised limits, and `from: anyone`.
+
+### What reaches the agent
+
+- **Content is data.** Issues, pull requests, comments, Slack threads, Linear issues, stack traces, webhook bodies and MCP results reach the agent marked as data.
+- **The Claude credential stays with Claude Code.** A subscription token goes to the Claude Code process only, which keeps it from the commands it runs. An API key goes to no environment: Claude Code reads it from `~/.openfabriq/secrets/` through a helper the engine sets.
+- **Secrets stay with commands.** `secrets` go to `setup`, commands and checks (for a run no maintainer started, to `setup` only, and not on a pull request's branch); an MCP server's secret goes to that server only. The agent's environment drops all of them, and any variable that looks like a secret. Their values live in `~/.openfabriq/secrets/`, readable by you only, and no sandboxed command or agent shell can read them.
+
+### What the machine exposes
+
+- **Sandboxes.** The agent's shell runs in Claude Code's sandbox; the engine's commands run in their own. Neither can read the machine's secrets (`~/.ssh`, `~/.config/gh`, `~/.aws`, the keychain, the engine's tokens), and both write only in the checkout and temporary folders. On Linux, both may open Unix sockets, which a browser needs, but do not see the machine's:
+  - `/run` (the session bus, Docker, the user's agents);
+  - what `/tmp` held when the run or the command started (an SSH agent, X11);
+  - the sockets of the home folder's hidden folders (git's credential cache, gpg-agent);
+  - another run's or command's temporary folder, which they can neither list nor guess.
+- **The sites of `network` only.** The agent's shell, its `web` tool and the engine's commands reach the sites the factory lists in [`network`](/factory/harness/#network): the package registries and GitHub by default. Each engine command has a proxy of its own, so a command of one run never borrows the sites of another. A branch cannot add a site.
+- **Project settings only.** Agents load the repository's Claude Code settings without its hooks, never `~/.claude/`, and only the MCP servers the factory declares.
+- **No open port.** The studio listens on `127.0.0.1`.
+  - It rejects `Host` headers other than `127.0.0.1:<port>` and `localhost:<port>`, against DNS rebinding. `OPENFABRIQ_STUDIO_URL` adds one https address to them, where the cookie becomes `Secure`.
+  - It answers only a browser that opened the address printed by `start`, which sets an `HttpOnly`, `SameSite=Strict` cookie with a token drawn at each start. Code in a sandbox reaches `127.0.0.1` too, but reads nothing.
+  - With `OPENFABRIQ_STUDIO_PASSWORD`, a sign-in form sets the same cookie. The password stays in the engine's environment. 10 wrong ones in 10 minutes from one address close the form for that address; 100 from anywhere, for everyone.
+  - With sign-in by GitHub, the studio keeps no token of the person. It learns their login, asks GitHub with the app's own token whether they can write to a repository of the factory, and asks again every hour. Its session cookie is signed by a key drawn from the app's client secret, and lasts a week at most.
+  - No other site can show it in a frame.
+
+## Known limits
+
+### The agent's reach
+
+- **A listed site is a way out.** An agent could send what it read to a site of its `network`. The sites of `packages` take nothing without an account, and agents have none. List only the sites a job needs, and give `any` only to an agent that must search the web.
+- **Remote MCP servers are outside `network`.** Claude Code calls them itself, outside the sandbox. `plan` lists each one, and the agents that use it.
+- **The home folder is readable**, except the secrets listed above. Files such as `~/.npmrc` or `~/.netrc` remain readable: keep them free of tokens on the engine's machine, or run the engine under a dedicated user.
+- **A test secret can leak.** An agent that changes code and runs a command could print a value of `secrets`. Use test values only.
+
+### Shared machines
+
+- **An MCP server's secret appears in a command line.** Claude Code receives its MCP servers as an argument, so the bearer token of a remote server and the variables of a local one show in the process list. On a machine shared with other users, run the engine under its own user, and on Linux mount `/proc` with `hidepid=2`.
+- **The factories of a machine share its environment.** A factory can name in `secrets` any variable of the engine's environment, except the engine's own. Keep that environment free of production keys, and store each project's values in its own file with `openfabriq secret set`.
+
+### People and data
+
+- **Access to the source is the gate** for Slack, Linear and Sentry. Use a private channel, and know who is in the Linear team.
+- **Run one engine per factory.** Two engines would each answer the same event.
+- **Stack traces and data** can contain personal data. Instruct agents not to copy them, and review what they publish.

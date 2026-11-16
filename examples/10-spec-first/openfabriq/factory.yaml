@@ -1,0 +1,21 @@
+name: Spec-first factory
+description: An agent writes the spec, a human reviews and merges it, then an agent builds from the merged spec and another reviews the code against it. A human merges the code too.
+repository: acme/web-app
+maintainers: [alice]
+model: sonnet
+
+setup: pnpm install --frozen-lockfile
+
+commands:
+  test: pnpm test
+  lint: pnpm lint
+  typecheck: pnpm typecheck
+  dev: pnpm dev # agents start it in the background, with the shell
+checks: [test, lint, typecheck]
+
+limits:
+  usd_per_run: 5
+  usd_per_day: 30
+  minutes_per_run: 45
+  review_rounds: 3 # rounds of internal review before a person takes over
+answer_mentions: true # the agents that open pull requests answer a maintainer's @openfabriq in a comment on them; false turns it off

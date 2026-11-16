@@ -1,0 +1,44 @@
+---
+title: Why openfabriq
+description: What goes wrong when coding agents work as a team on a repository, and what openfabriq does instead.
+---
+
+Coding agents can implement an issue or review a pull request. Running several of them as a team on a repository is where it gets hard. Each section names one problem, then the choice openfabriq makes.
+
+## The setup is hard to read and to maintain [#the-setup-is-hard-to-read]
+
+Agent pipelines are often long workflow graphs, or prompts, scripts and dashboard settings spread across tools and laptops. Few people can read them or review a change. Nobody knows which version runs, and the setup leaves with the person who built it.
+
+**In openfabriq**, the whole factory is an `openfabriq/` folder of short Markdown and YAML files in your repository. A change is a pull request, reviewed like code, with its history in git. Triggers (`when`) and rights (`can`) are words from a closed list, so `openfabriq validate` checks every file and a non-developer can read what the factory does. The same folder runs on a laptop or a team server, and a new factory starts from a [template](/templates/).
+
+## Safeguards live in prompts
+
+"Never merge" in a prompt is a wish, not a guarantee. An agent that runs with your GitHub credentials can do anything they allow.
+
+**In openfabriq**, agents have no GitHub credentials. They propose outputs, and the engine applies only those the automation's `can` allows. It also runs your checks before code leaves the machine, and refuses changes to CI workflows. See the [security model](/reference/security/).
+
+## Changes take effect blindly
+
+Adding an agent or granting a right changes what the factory can do. The diff of a prompt does not show that.
+
+**In openfabriq**, `openfabriq plan` lists what a change will do, security changes first, and nothing changes until `openfabriq apply`. The engine runs the applied copy, never a branch, so a pull request cannot change the rules that judge it. See [Plan and apply](/factory/plan-and-apply/).
+
+## Hand-offs are invisible
+
+When one agent calls the next directly, nobody sees the chain, and nobody can stop it halfway.
+
+**In openfabriq**, agents hand work to each other through GitHub, as a team does: a label, a pull request or a review starts the next automation, and each step shows on the issue or the pull request. The review between agents happens before the pull request exists, so it reaches people clean. Review loops stop after `review_rounds`, and a person always merges. See [How work moves](/getting-started/concepts/#how-work-moves).
+
+## Runs and costs are a black box
+
+An agent that runs on its own spends tokens and time, and leaves little trace: what started it, what it changed, what it cost.
+
+**In openfabriq**, every run has a budget: a cost per run, a cost per day and a duration, set in [limits](/factory/factory-yaml/#limits). The [studio](/studio/overview/) shows each run: what started it, what the agent did, which outputs the engine applied or refused, and what it cost.
+
+## What openfabriq is not
+
+- **Not a hosted service.** The engine runs on your computer or your own server, with your Claude Code login or an Anthropic API key, and opens no port to the Internet. See [Deployment](/deployment/overview/).
+- **Not an agent.** It runs Claude Code agents that you describe, and knows no particular agent.
+- **Not a replacement for review.** Agents propose and open pull requests; people decide and merge.
+
+Next: [install openfabriq](/getting-started/install/), then follow the [Quickstart](/getting-started/quickstart/).

@@ -1,0 +1,12 @@
+{
+	"pages": [
+		"getting-started",
+		"factory",
+		"integrations",
+		"deployment",
+		"studio",
+		"mcp",
+		"reference",
+		"roadmap"
+	]
+}

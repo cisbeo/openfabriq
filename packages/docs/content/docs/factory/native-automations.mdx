@@ -1,0 +1,61 @@
+---
+title: Native automations
+description: What the engine provides without an automation to write, the wiki and the answer to mentions, and how to turn each on or off.
+---
+
+What a factory does is written in `openfabriq/`: read the files, and you know what runs. Two behaviors are the exception, the **native automations**: the engine provides them itself, and they act only when someone asks.
+
+| Native automation | What it does | Setting |
+| --- | --- | --- |
+| [The wiki](/factory/wiki/) | Keeps a map of the code for people and agents, by pull request, when you ask or after each merge | Off by default: `wiki: true` turns it on |
+| [The answer to mentions](#the-answer-to-mentions) | When a maintainer mentions `@openfabriq` on a pull request or an issue the factory opened, the agent that opened it answers | On by default: `answer_mentions: false` turns it off |
+
+The rule: **the engine answers when you address it, and never acts on its own without a file that says so.** Reworking a pull request after a review, resolving a conflict, fixing a red check are automations you write, so they show in your files. Templates such as [01-quickstart](/templates/quickstart/) ship `rework-pull-requests` and `resolve-conflicts`, and `openfabriq init` proposes them when the factory opens pull requests.
+
+A native automation is not a file of `openfabriq/`, but it is not hidden:
+
+- **`plan` shows it** in one line, and when it changes. The answer to mentions is listed with the security changes, since it lets agents push.
+- **The studio shows it**, marked *built into openfabriq*, with its agent, trigger and rights, in the workflow graph and on the agent's page.
+- **What it writes is signed** like the rest: the line under a comment names the automation, without a link, since no file holds it.
+- **It keeps the factory's limits**: `usd_per_run`, `usd_per_day` and `minutes_per_run` count its runs like the others.
+
+## The answer to mentions
+
+On a pull request or an issue the factory opened, talk to it as you would to the teammate who wrote it:
+
+```text
+@openfabriq add a test for an empty title
+```
+
+On a **pull request**, the agent that opened it does what the comment asks, on that pull request only: it changes the code, adds a test, answers a question, or merges the base branch and resolves the conflicts. It pushes, then answers in a comment. When the request is unclear or goes beyond the pull request, it pushes nothing and says why.
+
+On an **issue**, the agent that opened it answers in a comment: it explains, gives the steps, or writes out a file you ask for. It changes nothing: when the answer is a change to the code, it says which pull request or ticket holds it. More examples are on the [GitHub page](/integrations/github/#mention-the-factory-in-a-comment).
+
+For each agent that one of your automations gives `create_pull_request` or `create_issue`, the engine adds one automation, `answer-mentions-<agent>`, such as `answer-mentions-implementer`. It listens to the comments of pull requests when the agent opens some, and to those of issues in every case: an agent that opens pull requests also works on issues people label.
+
+### Which agent answers
+
+The agent that opened the pull request or the issue: with several such agents, each answers only on its own. On one a person opened, the last of these agents to work on it, such as the planner on the migration issue. The engine reads both in its journal.
+
+- **No agent of yours opens pull requests or issues**, say a factory with only a reviewer: nothing answers mentions, and `plan` shows nothing.
+- **On one a person opened that none of them worked on**, or when the engine does not have the journal of the machine that ran them, nothing answers: write an automation on `pull_request.commented` or `issue.commented` with `mentions` for those.
+
+### What it may do
+
+- **On a pull request, two rights only**: push to that pull request and comment on it. On an issue, one: comment. The usual locks hold: the factory's [`checks`](/factory/harness/#checks) pass before a push, a merge of the base must contain it and leave no conflict marker, and no commit may change `.github/workflows/`.
+- **Only maintainers start it**, as any automation (`from: maintainers`). A comment from anyone else, or without `@openfabriq`, starts nothing.
+- `@openfabriq` is a GitHub organization nobody reads: the mention notifies nobody.
+
+### Your automations come first
+
+When one of your automations listens to `pull_request.commented`, the engine adds no answer to mentions on pull requests: your factory has said what it wants with their comments. The same holds for issues and `issue.commented`. With `opened_by`, your automation takes over only that agent's pull requests, and the other agents keep the native answer: the migration templates handle comments on their planner's plan this way. The [02-sdlc](/templates/sdlc/) template writes its own `answer-mentions`, so that its reviewer reads the change a maintainer asked for before it is pushed.
+
+The names `answer-mentions-<agent>` are the engine's: `validate` refuses an automation of yours called like one.
+
+### Turn it off
+
+```yaml title="openfabriq/factory.yaml"
+answer_mentions: false   # the engine no longer answers @openfabriq on its pull requests and issues
+```
+
+`plan` reports it as `- answer-mentions: off`.

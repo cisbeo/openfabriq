@@ -1,0 +1,34 @@
+# End-to-end tests
+
+What a machine can check of openfabriq, end to end: the real relay (`wrangler dev`, no Cloudflare account), the built CLI, the engine with its real workspace on a local git origin. GitHub is faked; Slack's Web API is faked over HTTP. Not part of `pnpm test`.
+
+```
+pnpm e2e          # free: no model; about 90 s (the relay searches Sentry once a minute)
+pnpm e2e:agent    # real agents on haiku, through the machine's Claude Code: a few cents; about 30 s
+pnpm e2e:linux    # the shell sandbox on Linux, in Docker; real agents need the login below
+pnpm e2e:linux:login   # once: opens Claude Code in the container, type /login, then /exit
+```
+
+`e2e:linux` runs in a container (`linux/Dockerfile`) with seccomp, AppArmor and the masked system paths unconfined, the options of the engine's image: bubblewrap needs them to create its namespaces and mount its own `/proc` as a non-root user, as on a developer's Linux machine. Claude's login stays in the Docker volume `openfabriq-e2e-home`; `docker volume rm openfabriq-e2e-home` forgets it.
+
+Both build first (`pnpm build`). Each test has its own `OPENFABRIQ_HOME` in the temp folder, and its own relay on a free port.
+
+| File | What it checks |
+| --- | --- |
+| `free/webhooks.e2e.ts` | `connect webhook`, a signed delivery runs once, retries and wrong keys do not, a delivery waits while the engine is off, `none`, 413, `--remove` |
+| `free/slack-relay.e2e.ts` | Slack's URL check, signatures and stale requests, a mention made while the engine is off answered once in its thread |
+| `free/linear-labels.e2e.ts` | a Linear Issue webhook signed with another secret refused; a label added while the engine is off runs once, retries, another team and an update without a new label ignored, the comment posted as the app |
+| `free/self-hosted-relay.e2e.ts` | the relay in workerd alone: `connect relay --url`, a webhook kept while the relay restarts, then run by the engine |
+| `free/connect.e2e.ts` | `connect sentry`, `slack` and `linear` typed in a terminal, against the real relay and faked services: the default Sentry URL typed in and replaced, tokens hidden, a token Sentry or Slack refuses or lacking a scope not saved, Ctrl-C saves nothing; then the relay uses what it was given: it searches Sentry with the token and sends the new issue to the engine, answers Slack's URL check and Linear's webhooks with their signing secrets only; Linear's install page opened with the app's client ID. Not run: Linear's install itself, since the relay trades its code at api.linear.app from inside the Worker |
+| `free/commands.e2e.ts` | the commands around a factory on a real git repository, gh and Claude Code replaced: `plan` (security first, labels, the branch and uncommitted warnings), `apply` in a terminal (no by default; yes creates the labels and clones), `plan` and `apply` once applied, `status`, `run` (a manual run asked, signed with git's name; unknown automation, bad number), `secret set` (hidden, saved with mode 600; a value as argument or an undeclared name refused), `start` in a repository (the change applied after a yes, then stopped by the studio's port, held by the test or by a running `start`), `init --example` (repository and maintainer from gh) and `init` without an example (in a pipe it explains, in a terminal it opens Claude Code on the setup skill). Not run: the engine and studio of `start` themselves, covered by the engine's tests |
+| `free/areas.e2e.ts` | a factory ordered by area, with the built CLI: `validate` counts every area's agents and refuses a name used in two areas, `apply` copies the areas' folders, `plan` shows an agent moved out of its area on one line, `run` asks for an automation of an area; then the engine runs it with the shared skills, its area's and its own, and its issue's credit links to the file in its area |
+| `free/terminal.e2e.ts` | the mark and colors in a terminal; plain text in a pipe and with `NO_COLOR` |
+| `free/restart.e2e.ts` | the engine's process killed in a run: the run ends as interrupted and runs again once |
+| `agent/mcp.e2e.ts` | a remote MCP server with a token and a local one with a secret: listed tools called, others never run, a missing tool reported, the agent's shell sees no secret |
+| `agent/security.e2e.ts` | a webhook body that asks for writes outside `can`: only `create_issue` reaches GitHub |
+| `agent/checks.e2e.ts` | a passing check: the branch is pushed and the pull request opened; a failing one: nothing leaves the machine |
+| `linux/sandbox.e2e.ts` | the engine's commands, no login needed: without bubblewrap they fail with the reason; with it they read no secret and write only the worktree. Without bubblewrap, an agent with shell fails with the reason; with the login: an agent without shell still runs; in the engine's layout (clone, linked worktree under the engine's folder), the sandboxed shell reads no secret nor another run, reads the toolchains, writes and commits only in the worktree, sees no MCP token. With `CLAUDE_CODE_OAUTH_TOKEN` and `support/fake-anthropic.mjs` (no login needed): Claude Code sends the token, the agent's shell sees it neither in its environment nor in `/proc`. With `ANTHROPIC_API_KEY` too: Claude Code sends the key alone, read by the engine's helper, and the agent's shell sees it neither in its environment, nor in `/proc`, nor in its file. With the fake API: the shell opens a Unix socket of its own but reaches none of the machine's (an SSH agent in `/tmp`, git's credential cache, gpg-agent) nor lists the runs' folders; an engine command does the same and screenshots a page with agent-browser through the skill's script; and the engine runs an automation whose agent screenshots a page with the skill browser-evidence's script, commits it and opens a pull request that shows it by its commit: the image is on the origin, on the pull request's branch |
+
+`support/terminal.ts` runs the built CLI as a person does: in a pseudo-terminal (`support/terminal.py`, with python3) or with pipes, typing answers once their question shows. Its `PATH` starts with stand-ins for `open`, `xdg-open`, `claude` and the clipboard commands, which record what they get, and for `gh` (`support/fake-gh.mjs`), which answers for one repository, keeps the labels it creates and clones from a local bare origin. `support/fake-services.mjs`, loaded into the CLI with `node --import`, sends its calls to `slack.com/api` and `api.linear.app` to the test's fake server.
+
+`support/mcp-server.mjs` is a small MCP server written for these tests (stdio, or HTTP with a bearer token), and `support/fake-anthropic.mjs` a fake Messages API whose model runs one Bash command, or a list of tool calls: nothing is downloaded.

@@ -1,0 +1,110 @@
+---
+title: GitHub
+description: Always connected. Talk to the factory with labels, reviews and comments that mention it.
+---
+
+GitHub needs no setup and no relay. The engine reads your repository every minute with the `gh` command you are already logged in to, and writes with the same account.
+
+To have the factory write under its own name, run `openfabriq connect github` once. It creates your team's GitHub App and saves its key on this machine. The engine then works as the app, with a token per repository, and writes as the app's name followed by `[bot]`.
+
+- `--org name`: for an organization;
+- `--workflows`: if agents change `.github/workflows/`;
+- `--url u`: for [sign-in with GitHub](/deployment/docker/#sign-in-with-github) to the studio.
+
+See [The GitHub App](/deployment/docker/#the-github-app) and the [CLI](/reference/cli/#connect-services-and-secrets).
+
+## Talk to the factory
+
+You work with the factory as with a teammate, in issues and pull requests. What each gesture starts depends on your automations; these are the usual ones, as in the [02-sdlc template](/templates/sdlc/). The answer to a [mention](#mention-the-factory-in-a-comment) is the exception: it is built in.
+
+| You do | On | Event | Usually starts |
+| --- | --- | --- | --- |
+| Open an issue | an issue | `issue.opened` | the triage |
+| Answer the triage's questions in a comment | an issue | `issue.commented` | the triage again |
+| Add a label, such as `ready-for-agent` | an issue | `issue.labeled` | the implementation |
+| Request changes in a review | a pull request | `pull_request.changes_requested` | the rework |
+| Comment `@openfabriq …` | a pull request | `pull_request.commented` with `mentions` | natively, on the factory's pull requests: the agent that opened it does what the comment asks |
+| Comment `@openfabriq …` | an issue | `issue.commented` with `mentions` | natively, on the factory's issues: the agent that opened it answers in a comment |
+| Push commits | a pull request | `pull_request.updated` | the review |
+| Merge | the default branch | `default_branch.updated` | in some templates, a documentation or test pass |
+
+### Mention the factory in a comment
+
+To ask the factory something, mention it in plain words, as you would ask the teammate who wrote the pull request or the issue. The agent that opened it answers, or, on one you opened, the last agent of the factory that worked on it. That is [native](/factory/native-automations/#the-answer-to-mentions): it needs no automation.
+
+On a pull request, it can change the code, then answers in a comment:
+
+```text
+@openfabriq add a test for an empty title
+@openfabriq the bar under the title is missing, add it as on the old site
+@openfabriq merge main and resolve the conflicts
+@openfabriq why did you drop the Pricing link?
+@openfabriq add screenshots of the menu open on phone, old and new side by side
+```
+
+On an issue, it answers in a comment and changes nothing: a change to the code goes through a pull request.
+
+```text
+@openfabriq what exactly do I put in .github/workflows/deploy.yml? Give me the file
+@openfabriq which pages does this ticket cover, and what blocks it?
+@openfabriq explain the two options again, with what each one costs
+```
+
+Comments without the mention start nothing, and neither do comments from anyone who is not a maintainer. The `openfabriq` account on GitHub is an organization, so the mention notifies nobody. When a request is unclear, the agent asks in a comment instead of guessing: answer with another mention.
+
+On a pull request or an issue no agent of the factory has worked on, nothing answers unless one of your automations listens for the mention: see [`mentions`](/factory/automations/#when).
+
+## Who can start a run
+
+Only the actions of the people in `maintainers` start the factory, whatever the event: a label, a comment or a review from anyone else does nothing. `from: anyone` opens an automation to every GitHub user, which suits triage on an open-source repository; `plan` reports it as a security change. A push to the default branch counts whoever made it, since GitHub already controls who can push there.
+
+## What the factory writes
+
+The engine writes with your `gh` account, or as the GitHub App, only what each automation's `can` allows: comments, labels, pull requests, pushes to a pull request, change requests. It merges only where an automation has `merge_pull_request`, under its conditions and the engine's own locks (see [Auto-merge](/factory/automations/#auto-merge)).
+
+### The labels the engine puts [#engine-labels]
+
+Agents add the labels their automation's `can` allows. The engine also puts a few of its own; `plan` lists them with the labels to create, and `apply` creates them.
+
+| Label | Put by the engine when | Taken off when |
+| --- | --- | --- |
+| `openfabriq:working` | a run starts its work on the issue or pull request | the run ends, whatever its result ([below](#while-a-run-works)) |
+| `needs-human` | the engine hands the work to a person: a failed run, checks that still fail, `review_rounds` reached, or an [internal review](/factory/automations/#reviewed-by) that asks for a person | a person takes it off: the engine never does, since a person may have put it |
+| `ready-to-merge` | an internal review approved the pull request: it is ready for a person to merge | a later internal review of new commits does not approve them, or the engine pushes commits no review read |
+| `risk:low`, `risk:medium`, `risk:high` | an internal review approved the pull request, with this risk: `low` when nothing a user sees or stores can break, `high` for data, security, payments, or code many parts share | a later internal review gives another risk, or does not approve; or the engine pushes commits no review read |
+
+`ready-to-merge` and the `risk:` labels exist only in a factory with [`reviewed_by`](/factory/automations/#reviewed-by), and describe the commits the review read. So the engine takes them off when it pushes from an automation without `reviewed_by`, such as the native [answer to mentions](/factory/native-automations/#the-answer-to-mentions). A person's push also changes code nobody reviewed, but the engine does not see it: the labels stay.
+
+Searches on GitHub:
+
+- `is:open label:ready-to-merge -label:needs-human`: what can be merged; add `label:risk:low` for what merges in a minute.
+- `is:open label:needs-human`: what waits for someone, reviewed or not.
+
+A pull request can have both `ready-to-merge` and `needs-human`: the code is reviewed and low risk, but someone asked to wait. That person takes `needs-human` off when the wait is over.
+
+### While a run works
+
+An agent's outputs reach GitHub when its run ends. Meanwhile, the engine puts `openfabriq:working` on the issue or pull request, so your team sees work is under way, and takes it off when the run ends, success or failure. The engine's log says it: `acme/app #12: labeled openfabriq:working while review-pull-requests works`.
+
+- It is put once the run starts its work: a run skipped at once, because the day's budget is spent, the issue was closed or `review_rounds` is reached, leaves no trace.
+- Runs on Slack, Linear, Sentry, webhooks or a schedule have no issue or pull request, so no label.
+- The engine runs one run at a time per issue or pull request, so the label stays while a run works there.
+- If the engine stops in the middle of a run, it takes the label off when it starts again; the run queued again puts it back.
+- It starts nothing: the engine ignores it, and `validate` refuses it in an automation's `when` or `can`.
+
+### The signature line
+
+Every comment, review, issue and pull request the engine writes ends with a line that says who wrote it: openfabriq, the agent, the automation, with a link to its file in the repository, and the id of the run, as the studio lists it:
+
+```md
+---
+<sub>🤖 Written by [openfabriq](https://github.com/openfabriq/openfabriq) · agent `implementer` · automation [implement-ready-issues](…/openfabriq/automations/implement-ready-issues/automation.md) · run `k3x9p2`</sub>
+```
+
+The engine's own words, such as a hand-off to a human, leave out the agent. `signature: false` in [factory.yaml](/factory/factory-yaml/) turns the line off. Commits carry git's `user.name` and `user.email` on the engine's machine; as a GitHub App, the app's name followed by `[bot]`, unless `GIT_USER_NAME` and `GIT_USER_EMAIL` name another author; the pull request says the rest. Slack and Linear show the openfabriq app as the author already, so messages there carry no such line.
+
+Each write also carries an invisible signature, `<!-- openfabriq run=… -->`, even with `signature: false`. By it, the engine recognizes its own comments, which never start a run: an agent cannot start itself again. On your own pull requests GitHub refuses "Request changes", so the engine posts a comment review with a signature that counts as one.
+
+## Pull requests that change the factory
+
+Put `ignore_paths: ["openfabriq/**"]` on review automations, so a pull request that only changes `openfabriq/` is not reviewed by the factory it changes. Merging changes nothing by itself: the engine runs the applied copy until you [apply](/factory/plan-and-apply/) again.

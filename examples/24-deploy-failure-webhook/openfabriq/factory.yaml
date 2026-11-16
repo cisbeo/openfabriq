@@ -1,0 +1,26 @@
+name: Deploy incident factory
+description: A failed deploy or a downtime alert, posted to your relay, becomes an incident issue with the suspect commits; a clear regression also gets a revert pull request. A human decides.
+repository: acme/web-app
+maintainers: [alice]
+model: sonnet
+
+webhooks:
+  deploy-failed:
+    signature: standard # the deploy platform signs each request (Standard Webhooks)
+  uptime-down:
+    signature: none # the uptime monitor cannot sign: the secret is in the address
+
+setup: pnpm install --frozen-lockfile
+
+# The harness: the engine runs the checks before a revert leaves for GitHub.
+commands:
+  test: pnpm test
+  lint: pnpm lint
+checks: [test, lint]
+
+limits:
+  usd_per_run: 3
+  usd_per_day: 20
+  minutes_per_run: 20
+  review_rounds: 3
+answer_mentions: true # the agents that open pull requests answer a maintainer's @openfabriq in a comment on them; false turns it off

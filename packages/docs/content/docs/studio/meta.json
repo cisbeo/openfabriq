@@ -1,0 +1,13 @@
+{
+	"title": "Studio",
+	"pages": [
+		"overview",
+		"board",
+		"agents",
+		"runs",
+		"workflow",
+		"wiki",
+		"settings",
+		"chat"
+	]
+}

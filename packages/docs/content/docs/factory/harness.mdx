@@ -1,0 +1,283 @@
+---
+title: Harness
+description: Everything that frames an agent's work, from your project's instructions to the checks the engine runs before code leaves the machine.
+---
+
+The harness is everything around an agent while it works: what it reads, what it can do, what the engine runs and checks for it. Every piece is a file in your repository.
+
+| Piece | Where it is written | What it does |
+| --- | --- | --- |
+| [Project instructions](#project-instructions) | `CLAUDE.md` or `AGENTS.md` in your repository | Conventions every agent reads first |
+| [Skills](/factory/skills/) | `openfabriq/skills/`, `agents/<agent>/skills/` | Know-how an agent opens when it needs it |
+| [Tools](/factory/agents/#tools) | `tools` in `agent.md` | What an agent can do: read, edit, run commands… |
+| [MCP servers](/integrations/mcp/) | `mcp` in `factory.yaml` and `agent.md` | Outside tools, such as Sentry or a test database |
+| [`setup`](#setup), [`commands`](#commands), [`checks`](#checks) | `factory.yaml` | Prepare the checkout, run the project's commands, judge the code |
+| [Scripts](#scripts) | `openfabriq/scripts/` | What a command does when it does not fit on one line |
+| [Variables and secrets](#environment-variables-and-secrets) | `env` and `secrets` in `factory.yaml` | What those commands receive |
+| [`network`](#network) | `factory.yaml` and `agent.md` | The sites agents and commands reach |
+| [Hooks](#hooks) | Coming soon | Claude Code's hooks: a script at a given moment of the agent's work |
+
+## Example
+
+```yaml title="openfabriq/factory.yaml"
+setup: pnpm install --frozen-lockfile
+commands:
+  test: pnpm test
+  lint: pnpm lint
+  typecheck: pnpm typecheck
+checks: [test, lint, typecheck]
+env:
+  NODE_ENV: test
+secrets: [TEST_DATABASE_URL]
+network: [packages, api.stripe.com]
+```
+
+## Prepare the checkout: `setup` [#setup]
+
+One command, or a list, run in each checkout **before** the agent starts, to install dependencies and build. Install them here: an agent's shell cannot write to the package manager's store. `setup` runs in the [sandbox](#sandbox-of-the-engines-commands), without credentials, for 10 minutes at most (counted in `minutes_per_run`). If it fails, the run fails with the end of its output and goes to a person.
+
+## The project's commands: `commands` [#commands]
+
+Your project's commands, by name: a lowercase word, with digits, `-` and `_` allowed (`test`, `lint`, `e2e-smoke`). An agent with the `commands` tool runs them through the engine, and nothing else: prefer it to `shell` when the agent only runs tests.
+
+`run_command` waits for the command to end and returns the end of its output. Start a dev server, which never ends, with `shell`, in the background. Have a long report (coverage, audit) written to a file the agent then reads.
+
+## What judges the code: `checks` [#checks]
+
+`checks` names the `commands` that decide whether the code may leave the machine; `validate` refuses any other name. A check passes when its command exits with 0.
+
+```yaml title="openfabriq/factory.yaml"
+commands:
+  test: pnpm test
+  lint: pnpm lint
+  e2e: pnpm test:e2e   # slow: an agent runs it when it needs to, it judges nothing
+checks: [test, lint]
+```
+
+When an agent that changed files stops, the engine runs the checks itself, in order, until the first failure; a run that changed nothing runs none. The agent gets *The check "test" failed (pnpm test). Fix it, then finish.*, with the end of the output, and works again. If a check still fails after two rounds of fixes, the engine **refuses** `create_pull_request`, `push_to_pull_request`, and the run's comments and labels (they would describe a fix nobody can see). The run goes to a person, with a hand-off comment that names the check.
+
+So every pull request the factory opens has passed your checks, run from the applied factory, whatever the agent claimed. The engine also refuses any commit that changes `.github/workflows/`: once pushed, a workflow could read your repository's secrets. With [`reviewed_by`](/factory/automations/#reviewed-by), another agent then reviews the change, and a change it sends back goes through the checks again.
+
+## Scripts [#scripts]
+
+When a command does not fit on one line, write it as a script in `openfabriq/scripts/` and run it by its path:
+
+```yaml title="openfabriq/factory.yaml"
+commands:
+  test: pnpm test
+  size: scripts/bundle-size.sh 500   # runs openfabriq/scripts/bundle-size.sh, with 500 as its budget
+checks: [test, size]
+```
+
+```sh title="openfabriq/scripts/bundle-size.sh"
+#!/bin/sh
+# Checks that the built app stays light: fails when its files weigh more than the budget.
+# factory.yaml runs it as a check: scripts/bundle-size.sh 500 (the budget, in KB).
+
+set -eu # stop at the first error
+
+budget_kb="$1"
+
+pnpm build >/dev/null
+size_kb=$(du -sk dist/assets | cut -f1)
+
+if [ "$size_kb" -gt "$budget_kb" ]; then
+  echo "Too heavy: dist/assets is ${size_kb} KB, over the budget of ${budget_kb} KB."
+  exit 1
+fi
+echo "OK: dist/assets is ${size_kb} KB, under the budget of ${budget_kb} KB."
+```
+
+A command or `setup` line whose **first word** starts with `scripts/` runs that file of the factory, with the rest of the line as its arguments (`500` becomes `$1`). It runs like any command (checkout, sandbox, `env` and `secrets`, time limit). As a check, it passes on exit 0, and what it prints goes back to the agent.
+
+- **A `.sh` or `.mjs` file** whose first line says what runs it: `#!/bin/sh`, `#!/usr/bin/env bash` or `#!/usr/bin/env node` (the engine's machine always has Node). Run another language, such as `php` or `python3`, from a `.sh`, if the machine has it. Subfolders hold files two scripts share.
+- **Commented**: what it reads and writes, which secret it needs. Whoever reviews the factory reads it.
+- **From the applied factory**, never from the run's branch: `plan` shows each script added, changed or removed as a security change, and `apply` makes it executable, whatever its mode in your repository.
+- **What it calls comes from the checkout**: `pnpm build` still reads the branch's `package.json`. Only the script's text is protected, and [`secrets`](#environment-variables-and-secrets) reach every command: keep only test values there.
+- **`scripts/` means the factory's folder**; `./scripts/build.sh` is a file of your repository.
+
+`validate` reports a command that names a missing script, a script without its `#!` line, and a file of `scripts/` in another language. A longer script, calling an API with a secret and tested: `wpscan-report.sh` in [25-wordpress-maintenance](/templates/wordpress-maintenance/).
+
+<Accordions>
+<Accordion title="Test your scripts" id="test-your-scripts">
+
+Put their tests in `openfabriq/scripts/test/`, with Node's own test runner, so they need nothing installed. Name them `<name>-test.mjs`: your project's test runner, such as Vitest, would pick up `<name>.test.mjs` and fail on it.
+
+```js title="openfabriq/scripts/test/bundle-size-test.mjs"
+// Runs bundle-size.sh in a fake checkout: a pnpm that builds nothing, and files of a known size.
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { test } from "node:test";
+
+const script = join(import.meta.dirname, "..", "bundle-size.sh");
+
+function checkout(sizeKb) {
+  const dir = mkdtempSync(join(tmpdir(), "bundle-size-"));
+  mkdirSync(join(dir, "bin"));
+  writeFileSync(join(dir, "bin/pnpm"), "#!/bin/sh\n", { mode: 0o755 });
+  mkdirSync(join(dir, "dist/assets"), { recursive: true });
+  writeFileSync(join(dir, "dist/assets/app.js"), "x".repeat(sizeKb * 1024));
+  return dir;
+}
+
+const run = (dir, budgetKb) =>
+  execFileSync(script, [String(budgetKb)], {
+    cwd: dir,
+    env: { PATH: `${join(dir, "bin")}:${process.env.PATH}` },
+    encoding: "utf8",
+  });
+
+test("passes when the files are under the budget", () => {
+  assert.match(run(checkout(10), 500), /^OK: /);
+});
+
+test("fails when the files are over the budget", () => {
+  assert.throws(
+    () => run(checkout(600), 500),
+    (error) => error.stdout.startsWith("Too heavy"),
+  );
+});
+```
+
+```bash
+node --test 'openfabriq/scripts/test/*-test.mjs'
+```
+
+The engine copies `scripts/test/` with the factory but never runs it, and no command can name it: run the tests yourself or in your CI. Fixtures, such as a fake `composer.lock`, can sit next to them.
+
+</Accordion>
+</Accordions>
+
+## Environment variables and secrets
+
+| Key | Holds | Who receives it |
+| --- | --- | --- |
+| `env` | Values, written in the factory | `setup`, commands, checks **and** the agent |
+| `secrets` | Names only; the values stay on the engine's machine | `setup`, commands and checks, **never** the agent or the chat |
+
+For a run no maintainer started (Sentry, a webhook, a stranger), `secrets` go to `setup` only, and not even there on a pull request's branch: its commands and checks run code its agent wrote, and that branch holds what such a run pushed.
+
+`plan` shows every secret's name, never its value. Set each value once, on the engine's machine:
+
+```bash
+openfabriq secret set TEST_DATABASE_URL
+# Value of TEST_DATABASE_URL for acme/app (a test value, never a production one):
+```
+
+The value is read without being displayed, stored in `~/.openfabriq/secrets/<owner>/<repo>.env` (readable by you only), and used from the next run, with no restart. You can also edit that file (`NAME='value'`, one per line), or set the variable in the engine's environment (a container, a systemd `EnvironmentFile`), which wins over the file.
+
+- `start` lists the secrets set nowhere. A run still starts, and the command that needs one fails.
+- Refused in `env` and `secrets`: the engine's own names, starting with `GH_`, `GITHUB_`, `ANTHROPIC_`, `CLAUDE`, `SSH_`, `GIT_`, `OPENFABRIQ_`, `SLACK_`, `LINEAR_` or `SENTRY_`, and a name in both. `env` also refuses `NODE_OPTIONS`, `LD_*` and `DYLD_*`, which change how programs load code.
+- An [MCP server](/integrations/mcp/)'s secret is declared on that server, and goes to it alone.
+
+<Callout type="warn">
+An agent that can change the code and run a command could print a secret. Put only test values in `secrets`.
+</Callout>
+
+## The sites they reach: `network` [#network]
+
+An agent reads content nobody controls (an issue, a stranger's pull request, a stack trace), which may hide an instruction to send your code elsewhere. `network` lists the sites agents and commands reach on the Internet; the sandbox's proxy refuses the others, whatever the agent was told.
+
+### Choose the sites [#network-values]
+
+| Value | What it reaches | Default |
+| --- | --- | --- |
+| `packages` | The package registries and GitHub ([the list](#network-default)) | **Yes**, without `network` |
+| `none` | No site | |
+| A list | The sites listed, and the package registries if the list holds `packages`. `*.sentry.io` covers the subdomains of `sentry.io` | |
+| `any` | Any site | |
+
+Write it in `factory.yaml` for every agent and command, or in an `agent.md` for one agent, which replaces the factory's:
+
+```yaml title="openfabriq/factory.yaml"
+network: [packages, api.stripe.com, "*.sentry.io"]
+```
+
+```yaml title="openfabriq/agents/reviewer/agent.md"
+---
+description: Reviews a pull request
+tools: [read, commands]
+network: none   # it reads the pull request; it needs no site
+---
+```
+
+- Keep `packages` in a list, or an agent's shell can no longer install a dependency.
+- `localhost` and `127.0.0.1` are always reachable. A name that points to this machine, such as a DDEV site, is refused even when listed: use `localhost` and a port.
+- Comment each site's reason: a script that calls `api.figma.com`, an agent that reads changelogs. Keep `any` for an agent whose job is to search the web.
+- `plan` lists, with the security changes, every site an agent, `setup` or a local MCP server newly reaches. A branch cannot widen the list: the repository's `.claude/settings.json` adds no site, and a run whose settings let `web` reach more is refused.
+
+### By default [#network-default]
+
+| Works without `network` | Refused without `network` |
+| --- | --- |
+| `setup` installs dependencies: `pnpm install`, `npm ci`, `pip install`, `composer install`, `bundle install`, `go mod download` | A script or check that calls an outside API (Stripe, Figma, WPScan) |
+| A test talks to a database or the app it starts on `localhost` | A test that calls a staging server or a public API |
+| An agent clones a dependency, reads a release or a file on GitHub | `web` reading documentation or a changelog elsewhere; any web search |
+| | A tool that downloads from its own site, such as Playwright's browsers: install it on the machine, or list its site |
+
+Agents and commands have no GitHub token: they read GitHub, they do not write to it.
+
+<Accordions>
+<Accordion title="The sites of packages">
+
+| For | Sites |
+| --- | --- |
+| npm, pnpm and Yarn | `registry.npmjs.org`, `registry.yarnpkg.com`, `repo.yarnpkg.com` |
+| Python | `pypi.org`, `files.pythonhosted.org` |
+| Rust | `crates.io`, `index.crates.io`, `static.crates.io` |
+| Ruby | `rubygems.org`, `index.rubygems.org` |
+| PHP | `packagist.org`, `repo.packagist.org` |
+| Go | `proxy.golang.org`, `sum.golang.org` |
+| Java and .NET | `repo.maven.apache.org`, `repo1.maven.org`, `api.nuget.org` |
+| GitHub | `github.com`, `api.github.com`, `codeload.github.com`, `raw.githubusercontent.com`, `objects.githubusercontent.com` |
+
+</Accordion>
+</Accordions>
+
+### Who reaches what [#network-who]
+
+| Who | Reaches |
+| --- | --- |
+| `setup` | The factory's `network`, plus the package registries whatever `network` says |
+| An agent's shell and `web` tool | The agent's `network`, or the factory's. `web` searches the web only with `any`; with a list, it reads those sites' pages. An agent with `web` and `network: none` is refused |
+| The agent's `checks` and `commands` | The agent's `network` too: they run the code it wrote, and could otherwise carry what the agent cannot |
+| Local [MCP servers](/integrations/mcp/) | The factory's `network` |
+| A remote MCP server | Reached by Claude Code itself, outside the sandbox: `network` does not apply, and `plan` lists it apart |
+
+### When a site is refused
+
+It fails at once, with a message that names it ([the messages](/reference/troubleshooting/#network)). A command's or check's output then says where to add the site: the agent reads it, and so do you when the run goes to a person. The agent is also told the sites it reaches, and asked to name in its report a site it lacked.
+
+`openfabriq doctor` lists the sites the factory's files (`setup`, the commands, `env`, `scripts/`) call outside `network`, and the sites refused in the last 20 runs to `setup`, a check, a command or `web`. It skips refusals in the agent's shell, shown only in the run's log: their text could come from what the agent read, and doctor never suggests a site on the word of an issue or a command's output. Add the site to `network`; `plan` shows it before it applies.
+
+## Sandbox of the engine's commands
+
+`setup`, checks and commands run in a sandbox:
+
+- **Secrets.** They cannot read the machine's secrets.
+- **Writes.** Only in the checkout, their temporary folder and the project's cache (pnpm's store, npm's cache). Writing into git or your home folder fails.
+- **Settings.** `XDG_CONFIG_HOME` replaces `~/.config` with an empty folder of the command's own, removed after it: a tool that saves settings (Astro's telemetry) works, and no run reads the machine's `~/.config` or another run's. The agent's shell gets one too, in its run's temporary folder. A tool that writes elsewhere in the home folder (`~/.gradle`, `~/.cargo`, `~/.local`, `~/Library/Preferences` on macOS) still fails: point its own variable at a folder of the checkout in `env`.
+- **Network.** The sites of [`network`](#network), through the proxy in `HTTPS_PROXY`, which `curl`, package managers and Node's `fetch` follow; a client that ignores it has no network.
+- **Untrusted runs.** For a run no maintainer started, checks and commands get their own caches, removed after each command, so the agent's code leaves nothing in the project's cache, which `setup` reads with the factory's secrets. On a pull request's branch, such a run's `setup` gets its own caches too.
+- **Linux.** Requires `ripgrep`, `bubblewrap` and `socat`. A command may open Unix sockets, which a browser driven by agent-browser needs (a `parity` command that takes screenshots), but sees [none of the machine's](/reference/security/#what-the-machine-exposes), nor another command's temporary folder. As in the agent's shell, start the app and the browser, use them and stop them in the same command.
+
+## Project instructions
+
+Agents read the `CLAUDE.md` at the root of the checkout, as Claude Code does, or `AGENTS.md` when there is no `CLAUDE.md`; never both. Only the repository's settings are loaded, never the machine's (`~/.claude/`).
+
+Keep there what holds for any work on the code: the stack, the commands, the layout, the conventions. What concerns one agent goes in its brief; one task, in its automation.
+
+## Hooks
+
+<Callout title="Coming soon">
+The factory cannot declare hooks yet. Need them? [Open an issue](repo:issues) with your use case.
+</Callout>
+
+Your repository's Claude Code hooks (`.claude/settings.json`) do **not** run, in runs or in the chat: they would launch, from a pull request's branch, commands `plan` does not show, even for an agent that can only read.
+
+Nor does a branch choose what an agent can reach. The engine refuses a run when the branch's `.claude/settings.json` sets a credential helper such as `apiKeyHelper`, `enabledPlugins`, `extraKnownMarketplaces` (or `additionalMarketplaces`) or `permissions.additionalDirectories`, or when a project skill or command (`.claude/skills/`, `.claude/commands/`) grants itself tools with `allowed-tools`. The factory declares the agents' tools, skills and MCP servers, and `plan` shows them.
+
+Factory hooks will use Claude Code's hook format, run [scripts](#scripts) from the applied factory (so a pull request cannot change them), and show in `plan`. Until then, `checks` cover the main need.

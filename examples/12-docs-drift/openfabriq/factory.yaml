@@ -1,0 +1,11 @@
+name: Docs drift factory
+description: After each change on the default branch, an agent checks the README and the docs still match the code, and opens a docs-only pull request when they drifted.
+repository: acme/cli-tool
+maintainers: [alice]
+model: sonnet
+
+limits:
+  usd_per_run: 3
+  usd_per_day: 15
+  minutes_per_run: 30
+answer_mentions: true # the agents that open pull requests answer a maintainer's @openfabriq in a comment on them; false turns it off

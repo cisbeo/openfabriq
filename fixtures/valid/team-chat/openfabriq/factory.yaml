@@ -1,0 +1,22 @@
+name: Team chat factory
+description: Mention the factory in Slack, or label a Linear issue; it works, answers where you asked and links the pull request there. New production errors in Sentry become investigated GitHub issues.
+repository: acme/web-app
+maintainers: [alice]
+model: sonnet
+
+integrations:
+  slack:
+    channel: factory # where people mention the factory, and where it answers
+  linear:
+    team: ENG # the Linear team whose issues it reads
+  sentry:
+    organization: acme # the Sentry project whose new issues it reads
+    project: web-app
+
+setup: pnpm install --frozen-lockfile
+
+limits:
+  usd_per_run: 5
+  usd_per_day: 30
+  minutes_per_run: 45
+  review_rounds: 3

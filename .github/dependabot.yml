@@ -1,0 +1,25 @@
+version: 2
+updates:
+  # One grouped pull request a month for minors and patches: the workspace
+  # pins exact versions. A major stays out of the group and gets its own pull
+  # request, so it never holds back the safe updates.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      dependencies:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    ignore:
+      # Node's types follow the oldest Node the project supports (24), not the newest.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+    open-pull-requests-limit: 5
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]

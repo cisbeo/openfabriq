@@ -1,0 +1,11 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "openfabriq-relay",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-10-01",
+	"durable_objects": {
+		"bindings": [{ "name": "RELAY", "class_name": "Relay" }]
+	},
+	"exports": { "Relay": { "type": "durable-object", "storage": "sqlite" } },
+	"secrets": { "required": ["ENGINE_TOKEN"] }
+}

@@ -1,0 +1,99 @@
+---
+title: Quickstart
+description: From an empty repository to a first pull request opened by an agent.
+---
+
+The smallest useful factory: a maintainer labels an issue `ready-for-agent`, an agent opens a pull request, and a person merges it. About ten minutes.
+
+<Flow
+	steps={[
+		{ event: "Issue labeled", detail: "ready-for-agent", you: true },
+		"the engine starts",
+		{ agent: "implementer", detail: "implement-ready-issues" },
+		"opens",
+		{ event: "Pull request", icon: "pr" },
+		"a person reviews",
+		{ event: "Merged", you: true },
+	]}
+/>
+
+## With Claude Code
+
+Paste this prompt in Claude Code, opened in your repository. It installs openfabriq and what it needs, then does step 1 with you: it writes the factory and pushes it once you say yes. Then start the engine yourself (step 2): it runs as long as its terminal stays open.
+
+<CopyPrompt />
+
+## By hand
+
+[Install openfabriq](/getting-started/install/) first, then run the commands below in your repository's folder.
+
+<Steps>
+<Step>
+
+### Write the factory
+
+```bash
+openfabriq init
+```
+
+Claude Code reads your repository (README, test commands, labels, CI), asks a few questions, and writes the `openfabriq/` folder. It checks the files, explains what they will do and, once you say yes, pushes them to your default branch: the engine runs what is merged.
+
+</Step>
+<Step>
+
+### Start the engine
+
+```bash
+openfabriq start
+```
+
+It shows what will change, security first, and asks: answer `y`. It creates the factory's labels on GitHub, then reads the repository's new events every minute. Keep this terminal open, and open the [studio](/studio/overview/) at the address it prints: `http://127.0.0.1:4310/?token=…`.
+
+</Step>
+<Step>
+
+### Give it an issue
+
+On GitHub, open an issue that describes a small change, then add the `ready-for-agent` label. Only a maintainer's label counts: your GitHub login must be in `maintainers`, in `openfabriq/factory.yaml`.
+
+Within a minute, the run appears on the studio's board. A few minutes later, the pull request is open, linked to the issue, with proof that the tests pass.
+
+![A run in the studio: what started it, what the agent did, and the outputs the engine applied.](/screenshots/studio/run.png)
+
+<Accordions>
+<Accordion title="Let Claude Code write the issue">
+
+Run `claude` in your repository, in another terminal, and paste this prompt. Claude Code uses your `gh` login, so the label counts as added by you.
+
+```text title="Prompt for Claude Code"
+Suggest one small, well-bounded change to this repository that a coding agent
+can finish in a few minutes. Write it as a GitHub issue: a short title, what to
+change, and how to check it is done (a test to add or to pass).
+Show me the issue before creating it. Once I agree, create it with gh and add
+the ready-for-agent label. Do not change any code yourself: the factory does
+the work.
+```
+
+</Accordion>
+</Accordions>
+
+</Step>
+<Step>
+
+### Ask for changes, then merge
+
+Comment on the pull request as you would to a teammate: `@openfabriq add a test for an empty title`. The agent pushes to the pull request and answers in a comment. Comments without `@openfabriq` start nothing. A review that requests changes, or a conflict with `main`, sends it back too. When the pull request is right, merge it yourself.
+
+</Step>
+</Steps>
+
+## Go further
+
+- **Start from a template** instead of `init`: `openfabriq init --example 01-quickstart` copies it, with your repository and login filled in. Set its `setup` and `test` commands in `factory.yaml` to your project's. See [Templates](/templates/).
+- **Check before you start**: `openfabriq validate` checks the files, `plan` lists what would change, `apply` applies without starting the engine. See [Plan and apply](/factory/plan-and-apply/). When something does not work, run `openfabriq doctor` first: see [Troubleshooting](/reference/troubleshooting/).
+- **Change the factory**: run `init` again and describe the change, or edit the files by hand, as in [Your first factory](/getting-started/first-factory/). An edit runs once applied: `start` offers it.
+- **Keep a map of your code** in `wiki/`, for people and agents: [Wiki](/factory/wiki/).
+- **Extend the factory** with triage and a review before the pull request: the [02-sdlc template](/templates/sdlc/), or [Automations](/factory/automations/).
+- **Require proof** before any pull request with [the harness](/factory/harness/): the engine runs your tests itself.
+- **Start work from your team's tools** with the [integrations](/integrations/overview/): Slack, Linear, Sentry and webhooks.
+- **Run the engine for a team** on an always-on server: [Deployment](/deployment/overview/).

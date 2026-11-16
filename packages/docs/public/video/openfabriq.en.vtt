@@ -1,0 +1,61 @@
+WEBVTT
+
+00:00:00.400 --> 00:00:03.190
+This is your software factory. As code.
+
+00:00:04.300 --> 00:00:07.169
+One folder in your repository describes it all:
+
+00:00:07.169 --> 00:00:13.030
+the factory's settings, its agents, the automations that start them, and the skills they share.
+
+00:00:14.100 --> 00:00:18.925
+Before anything changes, openfabriq plan shows you what will, new rights first.
+
+00:00:18.925 --> 00:00:20.880
+Apply, and the factory is live.
+
+00:00:22.700 --> 00:00:26.303
+It runs on your machine, with your Claude subscription.
+
+00:00:26.303 --> 00:00:29.710
+Or on a server for the whole team, with an API key.
+
+00:00:30.700 --> 00:00:34.579
+Here's what that looks like. Someone asks for a fix in Slack.
+
+00:00:34.579 --> 00:00:37.250
+The factory turns it into a GitHub issue.
+
+00:00:38.100 --> 00:00:41.350
+Triage sorts it, and marks it ready for an agent.
+
+00:00:42.300 --> 00:00:44.560
+The implementer writes a test and makes it pass.
+
+00:00:44.560 --> 00:00:49.710
+Before anything leaves your machine, a reviewer reads the change, and sends it back until it's right.
+
+00:00:50.100 --> 00:00:53.020
+Then the engine runs your checks, and opens the pull request.
+
+00:00:53.700 --> 00:00:57.250
+Low risk, in files you allowed? It merges on its own.
+
+00:00:58.300 --> 00:00:59.720
+Anything else waits for a human.
+
+00:01:00.500 --> 00:01:04.120
+Agents propose. The engine writes only what you allowed.
+
+00:01:05.100 --> 00:01:08.860
+Start work from Slack, Linear, Sentry, or any webhook.
+
+00:01:09.700 --> 00:01:17.679
+And follow it all in the studio: every run and its cost, a wiki that maps your code, written for you, and a chat with your factory.
+
+00:01:17.679 --> 00:01:19.080
+Even from Claude Code.
+
+00:01:20.200 --> 00:01:23.680
+openfabriq. Open source. Your factory, your rules.

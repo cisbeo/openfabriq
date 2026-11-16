@@ -1,0 +1,29 @@
+# The relay on a machine of your own. In packages/relay, write a .env file:
+#   RELAY_DOMAIN=relay.example.com   a name that points to this machine, ports 80 and 443 open
+#   ENGINE_TOKEN=...                 openssl rand -hex 32; the engine asks for it in "connect relay --url"
+# then: docker compose up -d
+services:
+  relay:
+    build: .
+    restart: unless-stopped
+    environment:
+      ENGINE_TOKEN: ${ENGINE_TOKEN:?set ENGINE_TOKEN in .env}
+    volumes:
+      - relay-data:/relay/data
+
+  # HTTPS with a Let's Encrypt certificate, renewed by Caddy; Caddyfile also caps the body size.
+  caddy:
+    image: caddy:2.10.2
+    restart: unless-stopped
+    environment:
+      RELAY_DOMAIN: ${RELAY_DOMAIN:?set RELAY_DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+
+volumes:
+  relay-data:
+  caddy-data:

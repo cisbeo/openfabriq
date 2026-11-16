@@ -1,0 +1,19 @@
+name: SEO audit factory
+description: Checks the search basics of a static site from its build, every month and on request. One issue lists what it found, split between safe fixes and what a person must decide; a label on that issue sends the safe fixes as a pull request.
+repository: acme/marketing-site
+maintainers: [alice]
+model: sonnet
+timezone: Europe/Paris
+
+setup: pnpm install --frozen-lockfile
+
+commands:
+  build: pnpm build # writes the site to dist/
+  audit: scripts/seo-report.mjs dist # reads the built pages, writes seo-report.json; no outside service
+checks: [build]
+
+limits:
+  usd_per_run: 3
+  usd_per_day: 10
+  minutes_per_run: 30
+answer_mentions: true # the agents that open pull requests answer a maintainer's @openfabriq in a comment on them; false turns it off

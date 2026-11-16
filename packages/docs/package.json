@@ -1,0 +1,36 @@
+{
+	"name": "@openfabriq/docs",
+	"version": "0.0.0",
+	"private": true,
+	"license": "Apache-2.0",
+	"description": "Documentation site (Fumadocs on Next.js, exported as static files): build a factory, connect services, run it, read it in the studio.",
+	"type": "module",
+	"scripts": {
+		"dev": "pnpm --filter @openfabriq/studio build:demo && next dev --port 4320",
+		"build": "pnpm --filter @openfabriq/studio build:demo && next build",
+		"typecheck": "fumadocs-mdx && tsc --noEmit",
+		"postinstall": "fumadocs-mdx"
+	},
+	"dependencies": {
+		"@fontsource-variable/geist": "5.3.0",
+		"@fontsource-variable/geist-mono": "5.3.0",
+		"fumadocs-core": "16.17.10",
+		"fumadocs-mdx": "15.4.10",
+		"fumadocs-ui": "16.17.10",
+		"lucide-react": "1.68.0",
+		"next": "16.4.5",
+		"react": "^19.3.1",
+		"react-dom": "^19.3.1"
+	},
+	"devDependencies": {
+		"@tailwindcss/postcss": "4.3.4",
+		"@types/mdx": "^2.0.14",
+		"@types/node": "^24.19.2",
+		"@types/react": "^19.3.0",
+		"@types/react-dom": "^19.3.0",
+		"postcss": "^8.5.28",
+		"sharp": "0.35.5",
+		"tailwindcss": "4.3.4",
+		"typescript": "7.0.2"
+	}
+}

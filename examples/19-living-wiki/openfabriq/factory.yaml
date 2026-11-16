@@ -1,0 +1,23 @@
+name: Living wiki factory
+description: The engine keeps a map of the code in wiki/, updated after each merge. A guide answers questions about the code from it, and the implementer starts from it to deliver an issue. A human reviews and merges.
+repository: acme/web-app
+maintainers: [alice]
+model: sonnet
+
+setup: pnpm install --frozen-lockfile
+
+commands:
+  test: pnpm test
+  lint: pnpm lint
+checks: [test, lint]
+
+# The map of the code, for people and agents: written once on request, then updated after each merge.
+wiki:
+  folder: wiki
+  refresh: after_merge
+
+limits:
+  usd_per_run: 5
+  usd_per_day: 20
+  minutes_per_run: 45
+answer_mentions: true # the agents that open pull requests answer a maintainer's @openfabriq in a comment on them; false turns it off

@@ -1,0 +1,12 @@
+{
+	"title": "Integrations",
+	"pages": [
+		"overview",
+		"github",
+		"slack",
+		"linear",
+		"sentry",
+		"webhooks",
+		"mcp"
+	]
+}

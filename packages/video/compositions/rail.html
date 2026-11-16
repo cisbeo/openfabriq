@@ -1,0 +1,104 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "Geist";
+      src: url("assets/fonts/geist.woff2") format("woff2");
+      font-weight: 100 900;
+    }
+    #root p {
+      margin: 0;
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+      font-family: "Geist", sans-serif;
+      pointer-events: none;
+    }
+    /* One request, followed from Slack to the merge: the thread that ties the scenes together. */
+    #rail-bar {
+      position: absolute;
+      left: 50%;
+      top: 34px;
+      width: 1240px;
+      margin-left: -620px;
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      box-shadow: var(--shadow-small);
+    }
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 52px;
+      padding: 0 22px;
+      border-radius: 999px;
+      font-size: 28px;
+      font-weight: 500;
+      color: #8a8a8a;
+    }
+    .step i {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #d4d4d8;
+    }
+    .sep {
+      width: 28px;
+      height: 2px;
+      background: var(--line);
+    }
+  </style>
+  <div id="root" data-composition-id="rail" data-width="1920" data-height="1080">
+    <div id="rail-stage" class="clip" data-start="0" data-duration="34.5" data-layout-allow-overflow>
+      <div id="rail-bar">
+        <p id="rail-slack" class="step"><i></i>Slack</p><span class="sep"></span>
+        <p id="rail-issue" class="step"><i></i>Issue</p><span class="sep"></span>
+        <p id="rail-triage" class="step"><i></i>Triage</p><span class="sep"></span>
+        <p id="rail-implement" class="step"><i></i>Implement</p><span class="sep"></span>
+        <p id="rail-review" class="step"><i></i>Review</p><span class="sep"></span>
+        <p id="rail-merge" class="step"><i></i>Merge</p>
+      </div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const ACCENT = "rgb(37, 87, 207)";
+    const OK = "rgb(22, 128, 74)";
+    tl.fromTo(
+      "#rail-bar",
+      { opacity: 0, y: -24, filter: "blur(8px)" },
+      { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.5, ease: "expo.out" },
+      0.3,
+    );
+    // Seconds from the Slack scene's start, when each step happens on screen.
+    const steps = [
+      ["slack", 2.0],
+      ["issue", 4.6],
+      ["triage", 8.5],
+      ["implement", 11.9],
+      ["review", 16.4],
+      ["merge", 23.5],
+    ];
+    steps.forEach(([key, at], i) => {
+      tl.to(`#rail-${key}`, { color: "#0a0a0a", backgroundColor: "rgba(37, 87, 207, 0.08)", duration: 0.3 }, at);
+      tl.to(`#rail-${key} i`, { backgroundColor: ACCENT, scale: 1.25, duration: 0.3, ease: "back.out(2)" }, at);
+      if (i > 0) {
+        const prev = steps[i - 1][0];
+        tl.to(`#rail-${prev}`, { backgroundColor: "rgba(37, 87, 207, 0)", duration: 0.3 }, at);
+        tl.to(`#rail-${prev} i`, { backgroundColor: OK, scale: 1, duration: 0.3 }, at);
+      }
+    });
+    tl.to("#rail-merge", { backgroundColor: "rgba(37, 87, 207, 0)", duration: 0.3 }, 29.4);
+    tl.to("#rail-merge i", { backgroundColor: OK, scale: 1, duration: 0.3 }, 29.4);
+    // Step back: the whole path, centre stage, for "Agents propose".
+    tl.to("#rail-bar", { y: 300, scale: 1.35, duration: 0.8, ease: "power3.inOut" }, 29.6);
+    tl.to("#rail-bar", { opacity: 0, filter: "blur(8px)", duration: 0.2, ease: "power2.in" }, 34.2);
+    window.__timelines["rail"] = tl;
+  </script>
+</template>

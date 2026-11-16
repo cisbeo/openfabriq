@@ -1,0 +1,94 @@
+---
+title: Environment variables
+description: Every environment variable the engine reads, what it changes, and where to set it.
+---
+
+On your computer, openfabriq needs no environment variable: Claude Code and `gh` use their own logins, and `openfabriq connect` and `openfabriq secret set` save tokens and secret values in the engine's data folder.
+
+Use variables to move that folder, to pass tokens or secret values without writing them to disk (on a server or in a container), and to configure the Docker image.
+
+## Where to set them
+
+Set them for the process that runs the engine, and for every `openfabriq` command on the same machine:
+
+| Where the engine runs | Where to set them |
+| --- | --- |
+| Your computer | Your shell profile, for example `export OPENFABRIQ_HOME=/data/openfabriq` in `~/.zshrc` |
+| A server, with systemd | `Environment=` or an `EnvironmentFile=` in the service |
+| Docker | The `.env` file next to `docker-compose.yml`, or `environment` in that file. See [Docker](/deployment/docker/#configuration) |
+
+## The data folder
+
+| Variable | Effect | Values | Default |
+| --- | --- | --- | --- |
+| `OPENFABRIQ_HOME` | The folder where the engine keeps all its data | a folder path: `/data/openfabriq` | `~/.openfabriq` |
+
+It holds everything the engine knows:
+
+| Path in the folder | Contents |
+| --- | --- |
+| `projects/<owner>/<repo>/factory/` | The applied factory: the copy made by `openfabriq apply`, the one that runs |
+| `projects/<owner>/<repo>/` | The engine's clone of the repository, the queue, the runs and their transcripts, and the chat history |
+| `secrets.json` | The tokens saved by `openfabriq connect`, and the GitHub App's key (mode `0600`) |
+| `secrets/<owner>/<repo>.env` | The secret values saved by `openfabriq secret set` |
+
+`plan`, `apply`, `start`, `status`, `run`, `connect` and `secret set` must all see the same `OPENFABRIQ_HOME`: a command run without it reads and writes `~/.openfabriq` instead.
+
+To make the engine forget a project, stop `start` and delete `projects/<owner>/<repo>/`. Its secret values stay in `secrets/` until you delete them.
+
+## Service tokens
+
+These replace the tokens `openfabriq connect` saves in `secrets.json`; when both exist, the variable wins.
+
+| Variable | Service | Values | Replaces |
+| --- | --- | --- | --- |
+| `OPENFABRIQ_SLACK_BOT_TOKEN` | Slack, bot token | `xoxb-…` | `openfabriq connect slack` |
+| `OPENFABRIQ_SENTRY_TOKEN` | Sentry, auth token | `sntrys_…` | `openfabriq connect sentry` |
+
+`GITHUB_APP_ID` and `GITHUB_APP_PRIVATE_KEY` replace the GitHub App that `openfabriq connect github` saves: with either, the engine works as that app instead of `gh`'s own login, wherever it runs. See [A GitHub App instead of a token](/deployment/docker/#the-github-app).
+
+Linear needs no variable: its tokens stay in the [relay](/deployment/relay/), which refreshes them. The relay also needs its own copy of the Sentry token, given by `openfabriq connect sentry`.
+
+Agents never receive them: their environment drops every `OPENFABRIQ_*`, `GITHUB_*`, `SLACK_*`, `LINEAR_*` and `SENTRY_*` variable. Restart `openfabriq start` after changing one.
+
+## Values of the factory's secrets
+
+Each name a factory lists under `secrets` in `factory.yaml` can also be an environment variable of the engine, which wins over the value saved by `openfabriq secret set`:
+
+```bash
+export TEST_DATABASE_URL='postgres://test:test@localhost/app_test'
+openfabriq start
+```
+
+These values go to `setup`, commands and checks, never to the agent. Names the engine keeps for itself (`GH_*`, `GITHUB_*`, `ANTHROPIC_*`, `GIT_*`, `OPENFABRIQ_*`…) are refused. See [Environment variables and secrets](/factory/harness/#environment-variables-and-secrets).
+
+<Callout type="warn">
+Every factory on the machine can name any variable of the engine's environment in its `secrets`. Keep that environment free of production keys, and give each project its values with `openfabriq secret set`.
+</Callout>
+
+## Claude and the studio, on any machine
+
+| Variable | Effect | Values |
+| --- | --- | --- |
+| `ANTHROPIC_API_KEY` | Runs and the chat use this Anthropic API key, billed per token, instead of the Claude Code login. `openfabriq start` says which one it uses. The agents never see it | `sk-ant-api03-…` |
+| `OPENFABRIQ_STUDIO_PASSWORD` | The password of the studio's sign-in form, described under the Docker image below; `openfabriq start` reads it wherever it runs | 16 characters or more: the output of `openssl rand -base64 24` |
+| `OPENFABRIQ_STUDIO_URL` | With the password or GitHub: the studio's https address, which it then accepts; `openfabriq start` reads it wherever it runs | an `https://` address: `https://factory.example.com` |
+| `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET` | With the GitHub App and `OPENFABRIQ_STUDIO_URL`: who can write to a repository of the factory signs in to the studio with GitHub, described under the Docker image below | the app's client id, `Iv23…`, and a client secret |
+| `OPENFABRIQ_MAX_RUNS` | How many runs `openfabriq start` runs at once, all projects together, `4` when unset; the others wait their turn. A run with a browser takes about 1 to 1.5 GB of memory | a number from 1 to 32: `2` |
+| `OPENFABRIQ_INTERVAL` | How often `openfabriq start` reads GitHub, in seconds, `60` when unset; `--interval` wins. Each read costs about 3 calls per repository, from GitHub's hourly allowance | `10` or more: `15` |
+| `NO_COLOR` | The CLI prints plain text, without colors | any non-empty value: `1` |
+| `TERM` | With the value `dumb`, the CLI prints plain text too | `dumb` |
+
+## The Docker image
+
+Nobody logs in inside the container, so the Docker image reads its configuration from variables only:
+
+<include>../../snippets/engine-variables.mdx</include>
+
+On the same server, the relay reads `ENGINE_TOKEN` and `RELAY_DOMAIN` too, with the `relay` profile: see [Add the relay on the same server](/deployment/docker/#add-the-relay-on-the-same-server).
+
+## The studio from the sources
+
+| Variable | Effect | Values | Default |
+| --- | --- | --- | --- |
+| `PORT` | The port of `pnpm --filter @openfabriq/studio serve`, the studio without the engine | a port number: `4320`; `0` for any free port | `4310` |
