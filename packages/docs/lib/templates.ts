@@ -229,6 +229,13 @@ const CATALOG: Record<
 		writes: "The plan's PR, ticket issues, reviewed PRs, sync PRs",
 		startsMidLeft: true,
 	},
+	"28-risk-routed-delivery": {
+		category: "start",
+		does: "Intake rates each issue's risk, a spec fixes the contract, and the review grows with the risk: one lens for a small change, up to five for a risky one, then an approver.",
+		startsOn: ["issue.labeled", "pull requests", "labels"],
+		writes:
+			"Comments, labels, pull requests reviewed before and after they open",
+	},
 };
 
 export interface Template {

@@ -1,0 +1,20 @@
+name: Risk-routed delivery factory
+description: From a queued issue to an approved pull request. Intake decides what is worth building and rates its risk, a spec fixes the contract, a builder implements, and the review grows with the risk, from one lens for a small change to five for a risky one. An approver gives the last opinion; a human merges.
+repository: acme/task-app
+maintainers: [alice] # only their actions start the factory
+model: sonnet # the default model of the agents
+
+setup: npm ci # install the dependencies in each run's checkout
+commands: # the project's commands, by name
+  test: npm test
+  typecheck: npm run typecheck
+  lint: npm run lint
+checks: [test, typecheck, lint] # run by the engine before any pull request leaves the machine; no reviewer reads a change that fails them
+
+limits:
+  usd_per_run: 5
+  usd_per_day: 40
+  minutes_per_run: 45
+  review_rounds: 3 # rounds of internal review before a person takes over
+
+answer_mentions: true # the builder answers a maintainer's @openfabriq in a comment on its pull requests

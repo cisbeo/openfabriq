@@ -29,7 +29,7 @@ packages/relay/     Cloudflare Worker + Durable Object the user deploys: webhook
 packages/docs/      the documentation site, Fumadocs exported as static files, in English
 packages/video/     the product video, HTML scenes rendered with HyperFrames; not a pnpm package
 e2e/                end-to-end tests: real relay, built CLI, engine
-examples/           example factories, 00-at-a-glance to 27-framer-to-astro, also the site's templates
+examples/           example factories, 00-at-a-glance to 28-risk-routed-delivery, also the site's templates
 fixtures/           valid and invalid factories for tests
 docker/             the engine's image; docker-compose.yml at the root runs it, the relay as an option
 packaging/          the Homebrew formula

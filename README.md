@@ -215,7 +215,7 @@ Agents run with Claude Code only, for now; Codex support is coming.
 
 ## Templates
 
-[`examples/`](examples) holds 28 ready-to-plug factories, each with a README and its workflow drawn as a graph. `openfabriq init --example <name>` copies one with your repository and login filled in. A few:
+[`examples/`](examples) holds 29 ready-to-plug factories, each with a README and its workflow drawn as a graph. `openfabriq init --example <name>` copies one with your repository and login filled in. A few:
 
 | Template | What it does |
 | --- | --- |
